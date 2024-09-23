@@ -12,33 +12,47 @@ import {
   saveTimerState,
   clearTimerState
 } from '@/lib/localStorage';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Home: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>(() => loadPlayers());
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState<number>(0);
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Add loading state
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load timer state if exists
   useEffect(() => {
-    const storedState = loadTimerState();
-    if (storedState && storedState.isRunning) {
-      setPlayers(storedState.players);
-      setCurrentPlayerIndex(storedState.currentPlayerIndex);
-      setIsRunning(storedState.isRunning);
-      setIsPaused(storedState.isPaused);
-    }
+    const loadData = () => {
+      const storedPlayers = loadPlayers();
+      const storedState = loadTimerState();
+
+      if (storedState && storedState.isRunning) {
+        setPlayers(storedState.players);
+        setCurrentPlayerIndex(storedState.currentPlayerIndex);
+        setIsRunning(storedState.isRunning);
+        setIsPaused(storedState.isPaused);
+      } else {
+        setPlayers(storedPlayers);
+      }
+
+      setIsLoading(false); // Data is loaded
+    };
+
+    loadData();
   }, []);
 
   // Save players to localStorage whenever they change
   useEffect(() => {
-    savePlayers(players);
-  }, [players]);
+    if (!isLoading) {
+      savePlayers(players);
+    }
+  }, [players, isLoading]);
 
   // Save timer state to localStorage whenever relevant state changes
   useEffect(() => {
-    if (isRunning) {
+    if (!isLoading && isRunning) {
       saveTimerState({
         players,
         currentPlayerIndex,
@@ -46,11 +60,11 @@ const Home: React.FC = () => {
         isPaused,
       });
     }
-  }, [players, currentPlayerIndex, isRunning, isPaused]);
+  }, [players, currentPlayerIndex, isRunning, isPaused, isLoading]);
 
   // Timer effect
   useEffect(() => {
-    if (isRunning && !isPaused) {
+    if (!isLoading && isRunning && !isPaused) {
       timerRef.current = setInterval(() => {
         setPlayers((prevPlayers) =>
           prevPlayers.map((player, index) =>
@@ -65,10 +79,12 @@ const Home: React.FC = () => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isRunning, isPaused, currentPlayerIndex]);
+  }, [isRunning, isPaused, currentPlayerIndex, isLoading]);
 
   // Handle spacebar press
   useEffect(() => {
+    if (isLoading) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
         e.preventDefault();
@@ -96,24 +112,25 @@ const Home: React.FC = () => {
   const handleEndTurn = () => {
     if (!isRunning || isPaused) return;
     if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setPlayers((prevPlayers) =>
-        prevPlayers.map((player, index) =>
-          index === currentPlayerIndex
-            ? { ...player, time: player.time + 1 }
-            : player
-        )
-      );
-    }, 1000);
+
+    // Update the current player's time one last time
+    setPlayers((prevPlayers) =>
+      prevPlayers.map((player, index) =>
+        index === currentPlayerIndex
+          ? { ...player, time: player.time + 1 }
+          : player
+      )
+    );
+
+    // Update the current player index
     setCurrentPlayerIndex((prevIndex) =>
       prevIndex + 1 < players.length ? prevIndex + 1 : 0
     );
-    // Ensure the timer continues for the new current player
   };
 
   const handlePause = () => {
     setIsPaused(true);
-    clearInterval(timerRef.current as NodeJS.Timeout);
+    if (timerRef.current) clearInterval(timerRef.current);
   };
 
   const handleResume = () => {
@@ -126,169 +143,49 @@ const Home: React.FC = () => {
     clearTimerState();
   };
 
+  if (isLoading) {
+    // Display a loading indicator while data is loading
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col items-center justify-start md:justify-center min-h-screen p-4 bg-neutral-900">
-      {!isRunning ? (
-        <PlayerInputForm
-          players={players}
-          setPlayers={setPlayers}
-          onStart={handleStart}
-        />
-      ) : (
-        <div className="w-full max-w-md">
-          {/* <Button onClick={handleBack} className="absolute top-6 left-6">
-            Back
-          </Button> */}
-          <Controls
-            onEndTurn={handleEndTurn}
-            onPause={handlePause}
-            onResume={handleResume}
-            onBack={handleBack}
-            isPaused={isPaused}
-          />
-          <PlayerCards
+    <AnimatePresence>
+      <motion.div
+        key="main-content"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex flex-col items-center justify-start md:justify-center min-h-screen p-4 bg-transparent"
+      >
+        {!isRunning ? (
+          <PlayerInputForm
             players={players}
-            currentPlayerIndex={currentPlayerIndex}
+            setPlayers={setPlayers}
+            onStart={handleStart}
           />
-        </div>
-      )}
-    </div>
+        ) : (
+          <div className="w-full max-w-md">
+            <Controls
+              onEndTurn={handleEndTurn}
+              onPause={handlePause}
+              onResume={handleResume}
+              onBack={handleBack}
+              isPaused={isPaused}
+            />
+            <PlayerCards
+              players={players}
+              currentPlayerIndex={currentPlayerIndex}
+            />
+          </div>
+        )}
+      </motion.div>
+    </AnimatePresence>
   );
 };
 
 export default Home;
-
-
-
-// const TOTAL_PLAYERS = 6;
-
-// export default function Home() {
-//   const [players, setPlayers] = useState<Array<{ name: string; time: number }>>(
-//     Array(TOTAL_PLAYERS).fill({ name: '', time: 0 })
-//   );
-//   const [currentPlayer, setCurrentPlayer] = useState(0);
-//   const [isRunning, setIsRunning] = useState(false);
-//   const [isPaused, setIsPaused] = useState(false);
-//   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-//   // Load player names from localStorage on mount
-//   useEffect(() => {
-//     const storedPlayers = JSON.parse(localStorage.getItem('players') || '[]');
-//     console.log(storedPlayers);
-//     if (storedPlayers && storedPlayers.length === TOTAL_PLAYERS) {
-//       console.log('setting players');
-//       setPlayers(storedPlayers);
-//     }
-//   }, []);
-
-//   // Save player names to localStorage whenever they change
-//   // useEffect(() => {
-//   //   localStorage.setItem('players', JSON.stringify(players));
-//   // }, [players]);
-
-//   // Timer effect
-//   useEffect(() => {
-//     if (isRunning && !isPaused) {
-//       timerRef.current = setInterval(() => {
-//         setPlayers((prevPlayers) =>
-//           prevPlayers.map((player, index) =>
-//             index === currentPlayer
-//               ? { ...player, time: player.time + 1 }
-//               : player
-//           )
-//         );
-//       }, 1000);
-//     }
-
-//     return () => {
-//       if (timerRef.current) {
-//         clearInterval(timerRef.current);
-//       }
-//     };
-//   }, [isRunning, isPaused, currentPlayer]);
-
-//   const handleEndTurn = () => {
-//     localStorage.setItem('players', JSON.stringify(players));
-//     if (!isRunning || isPaused) return;
-//     if (timerRef.current) {
-//       clearInterval(timerRef.current);
-//     }
-//     setCurrentPlayer((prev) => (prev + 1) % TOTAL_PLAYERS);
-//   };
-
-//   // Handle spacebar press
-//   useEffect(() => {
-//     const handleKeyDown = (e: KeyboardEvent) => {
-//       if (e.code === 'Space') {
-//         e.preventDefault();
-//         handleEndTurn();
-//       }
-//     };
-
-//     window.addEventListener('keydown', handleKeyDown);
-//     return () => window.removeEventListener('keydown', handleKeyDown);
-//   }, [currentPlayer, isRunning, isPaused]);
-
-//   const handleStart = () => {
-//     if (players.some((player) => player.name.trim() === '')) {
-//       alert('Please enter all player names.');
-//       return;
-//     }
-//     localStorage.setItem('players', JSON.stringify(players));
-//     setIsRunning(true);
-//     setIsPaused(false);
-//   };
-
-//   const handlePause = () => {
-//     localStorage.setItem('players', JSON.stringify(players));
-//     setIsPaused(true);
-//     if (timerRef.current) {
-//       clearInterval(timerRef.current);
-//     }
-//   };
-
-//   const handleResume = () => {
-//     setIsPaused(false);
-//   };
-
-//   const handleNameChange = (index: number, name: string) => {
-//     const updatedPlayers = [...players];
-//     updatedPlayers[index].name = name;
-//     setPlayers(updatedPlayers);
-//   };
-
-//   return (
-//     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-800">
-//       {!isRunning ? (
-//         <PlayerInputForm
-//           players={players}
-//           onNameChange={handleNameChange}
-//           onStart={handleStart}
-//         />
-//       ) : (
-//         <div className="w-full max-w-2xl">
-//           <TimerDisplay
-//             player={players[currentPlayer]}
-//           />
-//           <Controls
-//             onEndTurn={handleEndTurn}
-//             onPause={handlePause}
-//             onResume={handleResume}
-//             isPaused={isPaused}
-//           />
-//           <div className="mt-4">
-//             <h2 className="text-xl font-semibold">All Players:</h2>
-//             <ul className="list-decimal list-inside">
-//               {players.map((player, index) => (
-//                 <li key={index} className="flex justify-between">
-//                   <span>{player.name}</span>
-//                   <span>{formatTime(player.time)}</span>
-//                 </li>
-//               ))}
-//             </ul>
-//           </div>
-//         </div>
-//       )}
-//     </div>
-//   );
-// }

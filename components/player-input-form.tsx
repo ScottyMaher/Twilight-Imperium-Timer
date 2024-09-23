@@ -40,7 +40,7 @@ const PlayerInputForm: React.FC<PlayerInputFormProps> = ({
 
   return (
     <form
-      className="w-full max-w-md space-y-4 bg-neutral-700 p-6 rounded shadow"
+      className="w-full max-w-md space-y-4 bg-neutral-500/10 p-6 rounded shadow"
       onSubmit={(e) => {
         e.preventDefault();
         const filledPlayers = players.filter(

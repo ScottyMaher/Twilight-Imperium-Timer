@@ -41,8 +41,8 @@ const PlayerCards: React.FC<PlayerCardsProps> = ({
             key={player.id}
             layout
             animate={{ scale: sizeScale, opacity }}
-            transition={{ duration: 0.2 }}
-            className="bg-neutral-800 p-2 md:p-4 rounded shadow"
+            transition={{ duration: 0.3 }}
+            className="bg-neutral-500/10 p-2 md:p-4 rounded shadow outline outline-1 outline-neutral-500/30"
             style={{
               zIndex: players.length - index,
             }}
