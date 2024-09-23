@@ -25,7 +25,7 @@ const Controls: React.FC<ControlsProps> = ({
         Back
       </Button>
       {!isPaused ? (
-        <Button variant="outline" onClick={onPause}>
+        <Button variant="outline" className="outline outline-1 outline-neutral-100/50" onClick={onPause}>
           Pause
           <Pause fill='white' strokeWidth={0} />
         </Button>

@@ -58,6 +58,7 @@ const PlayerInputForm: React.FC<PlayerInputFormProps> = ({
         <div key={player.id} className="flex items-center space-x-2">
           <Input
             // label={`Player ${index + 1}`}
+            className='outline outline-1 outline-neutral-100/50'
             value={player.name}
             onChange={(e) => handleNameChange(player.id, e.target.value)}
             required
