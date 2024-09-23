@@ -4,6 +4,7 @@ import { Player } from '@/types/index';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { v4 as uuidv4 } from 'uuid';
+import { Reorder } from 'framer-motion';
 
 interface PlayerInputFormProps {
   players: Player[];
@@ -54,26 +55,28 @@ const PlayerInputForm: React.FC<PlayerInputFormProps> = ({
       }}
     >
       <h1 className="text-2xl font-bold text-center">Enter Player Names</h1>
-      {players.map((player) => (
-        <div key={player.id} className="flex items-center space-x-2">
-          <Input
-            // label={`Player ${index + 1}`}
-            className='outline outline-1 outline-neutral-100/50'
-            value={player.name}
-            onChange={(e) => handleNameChange(player.id, e.target.value)}
-            required
-          />
-          {players.length > 1 && (
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => handleRemovePlayer(player.id)}
-            >
-              Remove
-            </Button>
-          )}
-        </div>
-      ))}
+      <Reorder.Group axis="y" values={players} onReorder={setPlayers} className="space-y-4">
+        {players.map((player) => (
+          <Reorder.Item key={player.id} value={player} className="flex items-center space-x-2">
+            <Input
+              // label={`Player ${index + 1}`}
+              className='outline outline-1 outline-neutral-100/50'
+              value={player.name}
+              onChange={(e) => handleNameChange(player.id, e.target.value)}
+              required
+            />
+            {players.length > 1 && (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => handleRemovePlayer(player.id)}
+              >
+                Remove
+              </Button>
+            )}
+          </Reorder.Item>
+        ))}
+      </Reorder.Group>
       {players.length < 6 && (
         <Button type="button" onClick={handleAddPlayer}>
           Add Player
