@@ -32,7 +32,7 @@ export default function RootLayout({
   return (
     <html className="dark" lang="en">
       <body
-        className={`relative ${handelGothic.variable} antialiased`}
+        className={`relative ${handelGothic.variable} text-neutral-100 antialiased`}
       >
         <StarField />
         <div className="relative z-10">{children}</div>
