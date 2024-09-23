@@ -41,7 +41,7 @@ export const loadTimerState = () => {
   return null;
 };
 
-export const saveTimerState = (state: any) => {
+export const saveTimerState = (state: { players: Player[], currentPlayerIndex: number, isRunning: boolean, isPaused: boolean}) => {
   if (typeof window === 'undefined') return;
   localStorage.setItem(TIMER_STATE_KEY, JSON.stringify(state));
 };

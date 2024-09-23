@@ -78,7 +78,7 @@ const Home: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentPlayerIndex, isRunning, isPaused, players]);
+  });
 
   const handleStart = () => {
     const filledPlayers = players.filter(
