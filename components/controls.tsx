@@ -1,14 +1,16 @@
 // components/Controls.tsx
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ArrowBigRight } from 'lucide-react';
+import { ArrowLeft, ArrowBigLeft, ArrowBigRight } from 'lucide-react';
 
 interface ControlsProps {
+  onPrevTurn: () => void;
   onEndTurn: () => void;
   onBack: () => void;
 }
 
 const Controls: React.FC<ControlsProps> = ({
+  onPrevTurn,
   onEndTurn,
   onBack,
 }) => {
@@ -17,6 +19,10 @@ const Controls: React.FC<ControlsProps> = ({
       <Button variant="ghost" onClick={onBack} className="md:absolute md:top-6 md:left-6">
         <ArrowLeft />
         Back
+      </Button>
+      <Button variant="outline" onClick={onPrevTurn}>
+        <ArrowBigLeft absoluteStrokeWidth />
+        Prev Turn
       </Button>
       <Button onClick={onEndTurn}>
         End Turn

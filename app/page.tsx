@@ -197,6 +197,36 @@ const Home: React.FC = () => {
   };
   handleEndTurnRef.current = handleEndTurn;
 
+  const handlePrevTurn = () => {
+    if (phase !== 'running' || isPaused || !activeMode || players.length === 0) return;
+    if (timerRef.current) clearInterval(timerRef.current);
+
+    const previousIndex = currentPlayerIndex - 1 >= 0 ? currentPlayerIndex - 1 : players.length - 1;
+    const updatedPlayers =
+      activeMode.id === 'actionTimer'
+        ? players.map((player, index) =>
+            index === previousIndex
+              ? {
+                  ...player,
+                  actionTimeRemaining: 0,
+                  isInReserve: true,
+                }
+              : player
+          )
+        : players;
+
+    setPlayers(updatedPlayers);
+    setCurrentPlayerIndex(previousIndex);
+    saveTimerState({
+      players: updatedPlayers,
+      currentPlayerIndex: previousIndex,
+      isRunning: true,
+      isPaused: false,
+      modeId: selectedModeId,
+      modeConfig,
+    });
+  };
+
   const handlePause = () => {
     setIsPaused(true);
     if (timerRef.current) clearInterval(timerRef.current);
@@ -273,6 +303,7 @@ const Home: React.FC = () => {
         {phase === 'running' && activeMode && (
           <div className="w-full max-w-md">
             <Controls
+              onPrevTurn={handlePrevTurn}
               onEndTurn={handleEndTurn}
               onBack={handleBackToPlayers}
             />
