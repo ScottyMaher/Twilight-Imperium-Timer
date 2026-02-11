@@ -47,9 +47,12 @@ const PlayerRow: React.FC<PlayerRowProps> = ({
       <button
         type="button"
         aria-label={`Drag ${player.name || 'player'} row`}
-        onPointerDown={(e) => dragControls.start(e)}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          dragControls.start(e);
+        }}
         onPointerUp={() => onDragStateChange(false)}
-        className="rounded text-neutral-100/70 cursor-grab active:cursor-grabbing hover:text-white"
+        className="rounded touch-none select-none text-neutral-100/70 cursor-grab active:cursor-grabbing hover:text-white"
       >
         <GripVertical className="h-5 w-5" />
       </button>
