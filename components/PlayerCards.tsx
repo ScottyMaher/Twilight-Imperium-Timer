@@ -45,7 +45,8 @@ const PlayerCards: React.FC<PlayerCardsProps> = ({
         return (
           <motion.div
             key={player.id}
-            layout
+            layout="position"
+            layoutDependency={currentPlayerIndex}
             animate={{ scale: sizeScale, opacity }}
             transition={{ duration: 0.3 }}
             className="bg-neutral-500/10 p-2 md:p-4 rounded shadow outline outline-1 outline-neutral-500/30"
