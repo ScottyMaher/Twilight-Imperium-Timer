@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import StarField from "@/components/StarField";
 
 // const geistSans = localFont({
 //   src: "./fonts/GeistVF.woff",
@@ -34,7 +33,6 @@ export default function RootLayout({
       <body
         className={`relative ${handelGothic.variable} text-neutral-100 antialiased`}
       >
-        <StarField />
         <div className="relative z-10">{children}</div>
       </body>
     </html>

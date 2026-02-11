@@ -13,6 +13,7 @@ import {
   clearTimerState
 } from '@/lib/localStorage';
 import { motion, AnimatePresence } from 'framer-motion';
+import StarField from '@/components/StarField';
 
 const Home: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>(() => loadPlayers());
@@ -153,6 +154,8 @@ const Home: React.FC = () => {
   }
 
   return (
+    <>
+    <StarField animated={!isRunning} />
     <AnimatePresence>
       <motion.div
         key="main-content"
@@ -185,6 +188,7 @@ const Home: React.FC = () => {
         )}
       </motion.div>
     </AnimatePresence>
+    </>
   );
 };
 
