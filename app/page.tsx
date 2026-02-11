@@ -274,10 +274,7 @@ const Home: React.FC = () => {
           <div className="w-full max-w-md">
             <Controls
               onEndTurn={handleEndTurn}
-              onPause={handlePause}
-              onResume={handleResume}
               onBack={handleBackToPlayers}
-              isPaused={isPaused}
             />
             <PlayerCards
               players={players}

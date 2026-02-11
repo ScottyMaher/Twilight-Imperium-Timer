@@ -1,22 +1,16 @@
 // components/Controls.tsx
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Pause, Play, ArrowBigRight } from 'lucide-react';
+import { ArrowLeft, ArrowBigRight } from 'lucide-react';
 
 interface ControlsProps {
   onEndTurn: () => void;
-  onPause: () => void;
-  onResume: () => void;
   onBack: () => void;
-  isPaused: boolean;
 }
 
 const Controls: React.FC<ControlsProps> = ({
   onEndTurn,
-  onPause,
-  onResume,
   onBack,
-  isPaused,
 }) => {
   return (
     <div className="flex flex-col md:flex-row space-y-4 md:space-x-4 justify-center mb-6">
@@ -24,17 +18,6 @@ const Controls: React.FC<ControlsProps> = ({
         <ArrowLeft />
         Back
       </Button>
-      {!isPaused ? (
-        <Button variant="outline" className="outline outline-1 outline-neutral-100/50" onClick={onPause}>
-          Pause
-          <Pause fill='white' strokeWidth={0} />
-        </Button>
-      ) : (
-        <Button variant="outline" onClick={onResume}>
-          Resume
-          <Play fill='white' strokeWidth={0} />
-        </Button>
-      )}
       <Button onClick={onEndTurn}>
         End Turn
         <ArrowBigRight absoluteStrokeWidth />
