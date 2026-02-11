@@ -51,17 +51,19 @@ const Home: React.FC = () => {
     }
   }, [players, isLoading]);
 
-  // Save timer state to localStorage whenever relevant state changes
+  // Periodic save to localStorage every 60 seconds while running
+  const latestStateRef = useRef({ players, currentPlayerIndex, isPaused });
+  latestStateRef.current = { players, currentPlayerIndex, isPaused };
+
   useEffect(() => {
     if (!isLoading && isRunning) {
-      saveTimerState({
-        players,
-        currentPlayerIndex,
-        isRunning,
-        isPaused,
-      });
+      const saveInterval = setInterval(() => {
+        const { players, currentPlayerIndex, isPaused } = latestStateRef.current;
+        saveTimerState({ players, currentPlayerIndex, isRunning: true, isPaused });
+      }, 60000);
+      return () => clearInterval(saveInterval);
     }
-  }, [players, currentPlayerIndex, isRunning, isPaused, isLoading]);
+  }, [isRunning, isLoading]);
 
   // Timer effect
   useEffect(() => {
@@ -114,24 +116,22 @@ const Home: React.FC = () => {
     if (!isRunning || isPaused) return;
     if (timerRef.current) clearInterval(timerRef.current);
 
-    // Update the current player's time one last time
-    setPlayers((prevPlayers) =>
-      prevPlayers.map((player, index) =>
-        index === currentPlayerIndex
-          ? { ...player, time: player.time + 1 }
-          : player
-      )
+    const updatedPlayers = players.map((player, index) =>
+      index === currentPlayerIndex
+        ? { ...player, time: player.time + 1 }
+        : player
     );
+    const nextIndex = currentPlayerIndex + 1 < players.length ? currentPlayerIndex + 1 : 0;
 
-    // Update the current player index
-    setCurrentPlayerIndex((prevIndex) =>
-      prevIndex + 1 < players.length ? prevIndex + 1 : 0
-    );
+    setPlayers(updatedPlayers);
+    setCurrentPlayerIndex(nextIndex);
+    saveTimerState({ players: updatedPlayers, currentPlayerIndex: nextIndex, isRunning: true, isPaused: false });
   };
 
   const handlePause = () => {
     setIsPaused(true);
     if (timerRef.current) clearInterval(timerRef.current);
+    saveTimerState({ players, currentPlayerIndex, isRunning: true, isPaused: true });
   };
 
   const handleResume = () => {
