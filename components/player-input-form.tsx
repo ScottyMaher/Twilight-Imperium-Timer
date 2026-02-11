@@ -60,6 +60,12 @@ const PlayerRow: React.FC<PlayerRowProps> = ({
         className="outline outline-1 outline-neutral-100/50"
         value={player.name}
         onChange={(e) => onNameChange(player.id, e.target.value)}
+        onFocus={(e) => {
+          const target = e.target;
+          setTimeout(() => {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 300);
+        }}
         required
       />
       {playersCount > 1 && (
