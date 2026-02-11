@@ -18,7 +18,7 @@ const Controls: React.FC<ControlsProps> = ({
     <>
       <Button variant="ghost" onClick={onBack} className="absolute top-6 left-6">
         <ArrowLeft />
-        Back
+        Back <span className="ml-3">(end round)</span>
       </Button>
 
       <div className="mt-4 md:mb-6 w-full flex flex-row gap-3 justify-center">

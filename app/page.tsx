@@ -28,7 +28,7 @@ const Home: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>(() => loadPlayers());
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState<number>(0);
   const [phase, setPhase] = useState<Phase>('configure');
-  const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [isPaused, setIsPaused] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [logoLoadFailed, setLogoLoadFailed] = useState<boolean>(false);
 
@@ -152,8 +152,17 @@ const Home: React.FC = () => {
 
     // If already started (coming back from running), just resume
     if (hasStarted) {
+      setCurrentPlayerIndex(0);
       setPhase('running');
-      setIsPaused(false);
+      setIsPaused(true);
+      saveTimerState({
+        players,
+        currentPlayerIndex: 0,
+        isRunning: true,
+        isPaused: true,
+        modeId: selectedModeId,
+        modeConfig,
+      });
       return;
     }
 
