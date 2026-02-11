@@ -15,20 +15,30 @@ const Controls: React.FC<ControlsProps> = ({
   onBack,
 }) => {
   return (
-    <div className="flex flex-col md:flex-row space-y-4 md:space-x-4 justify-center mb-6">
-      <Button variant="ghost" onClick={onBack} className="md:absolute md:top-6 md:left-6">
+    <>
+      <Button variant="ghost" onClick={onBack} className="absolute top-6 left-6">
         <ArrowLeft />
         Back
       </Button>
-      <Button variant="outline" onClick={onPrevTurn}>
-        <ArrowBigLeft absoluteStrokeWidth />
-        Prev Turn
-      </Button>
-      <Button onClick={onEndTurn}>
-        End Turn
-        <ArrowBigRight absoluteStrokeWidth />
-      </Button>
-    </div>
+
+      <div className="mt-4 md:mb-6 w-full flex flex-row gap-3 justify-center">
+        <Button
+          variant="outline"
+          onClick={onPrevTurn}
+          className="h-24 md:h-auto w-1/3 text-base"
+        >
+          <ArrowBigLeft absoluteStrokeWidth />
+          Prev Turn
+        </Button>
+        <Button
+          onClick={onEndTurn}
+          className="h-24 md:h-auto w-2/3 text-base"
+        >
+          End Turn
+          <ArrowBigRight absoluteStrokeWidth />
+        </Button>
+      </div>
+    </>
   );
 };
 

@@ -281,7 +281,7 @@ const Home: React.FC = () => {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.5 }}
-        className="flex flex-col items-center justify-start md:justify-center min-h-screen p-4 bg-transparent"
+        className="flex flex-col items-center justify-center md:justify-center min-h-screen p-4 bg-transparent"
         onClick={handleScreenTap}
       >
         {phase === 'configure' && (
@@ -301,18 +301,22 @@ const Home: React.FC = () => {
           />
         )}
         {phase === 'running' && activeMode && (
-          <div className="w-full max-w-md">
-            <Controls
-              onPrevTurn={handlePrevTurn}
-              onEndTurn={handleEndTurn}
-              onBack={handleBackToPlayers}
-            />
-            <PlayerCards
-              players={players}
-              currentPlayerIndex={currentPlayerIndex}
-              mode={activeMode}
-              modeConfig={modeConfig}
-            />
+          <div className="w-full max-w-md flex flex-col">
+            <div className="order-1 md:order-2">
+              <PlayerCards
+                players={players}
+                currentPlayerIndex={currentPlayerIndex}
+                mode={activeMode}
+                modeConfig={modeConfig}
+              />
+            </div>
+            <div className="order-2 md:order-1">
+              <Controls
+                onPrevTurn={handlePrevTurn}
+                onEndTurn={handleEndTurn}
+                onBack={handleBackToPlayers}
+              />
+            </div>
           </div>
         )}
         <Dialog open={isPaused && phase === 'running'} onOpenChange={(open) => { if (!open) handleResume(); }}>
