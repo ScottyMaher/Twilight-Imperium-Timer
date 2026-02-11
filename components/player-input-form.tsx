@@ -47,9 +47,12 @@ const PlayerRow: React.FC<PlayerRowProps> = ({
       <button
         type="button"
         aria-label={`Drag ${player.name || 'player'} row`}
-        onPointerDown={(e) => dragControls.start(e)}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          dragControls.start(e);
+        }}
         onPointerUp={() => onDragStateChange(false)}
-        className="rounded text-neutral-100/70 cursor-grab active:cursor-grabbing hover:text-white"
+        className="rounded touch-none select-none text-neutral-100/70 cursor-grab active:cursor-grabbing hover:text-white"
       >
         <GripVertical className="h-5 w-5" />
       </button>
@@ -57,6 +60,12 @@ const PlayerRow: React.FC<PlayerRowProps> = ({
         className="outline outline-1 outline-neutral-100/50"
         value={player.name}
         onChange={(e) => onNameChange(player.id, e.target.value)}
+        onFocus={(e) => {
+          const target = e.target;
+          setTimeout(() => {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 300);
+        }}
         required
       />
       {playersCount > 1 && (

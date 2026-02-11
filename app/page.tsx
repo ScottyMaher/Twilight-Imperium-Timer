@@ -292,7 +292,7 @@ const Home: React.FC = () => {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.5 }}
-        className="relative flex flex-col items-center justify-center md:justify-center min-h-screen p-4 bg-transparent"
+        className="relative flex flex-col items-center justify-center md:justify-center min-h-screen min-h-dvh p-4 bg-transparent"
         onClick={handleScreenTap}
       >
         {phase === 'configure' && (
