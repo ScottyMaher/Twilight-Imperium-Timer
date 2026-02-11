@@ -22,6 +22,7 @@ import { Dialog, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { Play } from 'lucide-react';
 
 type Phase = 'configure' | 'players' | 'running';
+const TWILIGHT_IMPERIUM_LOGO_URL = 'https://cdn.svc.asmodee.net/production-aconytebooks/uploads/image-converter/2020/04/TWI-Twilight-Imperium-logo.webp';
 
 const Home: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>(() => loadPlayers());
@@ -29,6 +30,7 @@ const Home: React.FC = () => {
   const [phase, setPhase] = useState<Phase>('configure');
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [logoLoadFailed, setLogoLoadFailed] = useState<boolean>(false);
 
   // Mode state — initialize from saved config or default to first mode
   const [selectedModeId, setSelectedModeId] = useState<string>(() => {
@@ -281,9 +283,31 @@ const Home: React.FC = () => {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.5 }}
-        className="flex flex-col items-center justify-center md:justify-center min-h-screen p-4 bg-transparent"
+        className="relative flex flex-col items-center justify-center md:justify-center min-h-screen p-4 bg-transparent"
         onClick={handleScreenTap}
       >
+        {phase === 'configure' && (
+          <div className="pointer-events-none absolute top-0 flex flex-col items-center text-center">
+            {TWILIGHT_IMPERIUM_LOGO_URL && !logoLoadFailed ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={TWILIGHT_IMPERIUM_LOGO_URL}
+                  alt="Twilight Imperium"
+                  className="h-auto w-[min(92vw,42rem)]"
+                  onError={() => setLogoLoadFailed(true)}
+                />
+                <span className="relative -top-12 text-3xl font-bold uppercase tracking-[0.2em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] md:text-4xl">
+                  Timer
+                </span>
+              </>
+            ) : (
+              <h1 className="mt-20 text-4xl font-bold tracking-wide text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] md:text-5xl">
+                Twilight Imperium Timer
+              </h1>
+            )}
+          </div>
+        )}
         {phase === 'configure' && (
           <TimerConfig
             selectedModeId={selectedModeId}

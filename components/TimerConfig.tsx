@@ -29,14 +29,13 @@ const TimerConfig: React.FC<TimerConfigProps> = ({
 
   return (
     <div className="w-full max-w-md space-y-6 bg-neutral-500/10 p-7 rounded shadow">
-      <h1 className="text-2xl font-bold text-center">Timer Mode</h1>
       <Tabs value={selectedModeId} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="w-full h-auto bg-foreground/5 p-1">
           {modes.map((mode) => (
             <TabsTrigger
               key={mode.id}
               value={mode.id}
-              className="flex-1 rounded-none border-b-2 border-transparent py-2.5 hover:border-foreground/40 text-foreground/70 data-[state=active]:border-white data-[state=active]:bg-transparent data-[state=active]:text-secondary-foreground data-[state=active]:shadow-none"
+              className="flex-1 text-md rounded-none border-b-2 border-transparent py-2.5 hover:border-foreground/40 text-foreground/70 data-[state=active]:border-white data-[state=active]:bg-transparent data-[state=active]:text-secondary-foreground data-[state=active]:shadow-none"
             >
               {mode.label}
             </TabsTrigger>
