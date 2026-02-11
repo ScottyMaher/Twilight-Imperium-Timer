@@ -18,6 +18,8 @@ import {
 } from '@/lib/localStorage';
 import { motion, AnimatePresence } from 'framer-motion';
 import StarField from '@/components/StarField';
+import { Dialog, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
+import { Play } from 'lucide-react';
 
 type Phase = 'configure' | 'players' | 'running';
 
@@ -223,6 +225,14 @@ const Home: React.FC = () => {
     clearTimerState();
   };
 
+  const handleScreenTap = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isPaused && !(e.target as HTMLElement).closest('button')) {
+      handlePause();
+    } else if (isPaused && !(e.target as HTMLElement).closest('button')) {
+      handleResume();
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -242,6 +252,7 @@ const Home: React.FC = () => {
         exit={{ opacity: 0 }}
         transition={{ duration: 0.5 }}
         className="flex flex-col items-center justify-start md:justify-center min-h-screen p-4 bg-transparent"
+        onClick={handleScreenTap}
       >
         {phase === 'configure' && (
           <TimerConfig
@@ -276,6 +287,17 @@ const Home: React.FC = () => {
             />
           </div>
         )}
+        <Dialog open={isPaused && phase === 'running'} onOpenChange={(open) => { if (!open) handleResume(); }}>
+          <DialogPortal>
+            <DialogOverlay className="bg-black/40" />
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center cursor-pointer"
+              onClick={handleResume}
+            >
+              <Play className="h-20 w-20 text-white/80 drop-shadow-lg" fill="currentColor" strokeWidth={0} />
+            </div>
+          </DialogPortal>
+        </Dialog>
       </motion.div>
     </AnimatePresence>
     </>
