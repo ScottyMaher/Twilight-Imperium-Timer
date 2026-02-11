@@ -58,7 +58,7 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
     isInReserve: false,
   }),
 
-  onTick: (player: Player, config: ActionTimerConfig): Player => {
+  onTick: (player: Player): Player => {
     const p = player as ActionTimerPlayer;
     if (p.actionTimeRemaining > 0) {
       return { ...p, actionTimeRemaining: p.actionTimeRemaining - 1, time: p.time + 1 };
