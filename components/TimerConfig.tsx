@@ -36,7 +36,7 @@ const TimerConfig: React.FC<TimerConfigProps> = ({
             <TabsTrigger
               key={mode.id}
               value={mode.id}
-              className="flex-1 rounded-none border-b-2 border-transparent py-2.5 text-foreground/70 data-[state=active]:border-white data-[state=active]:bg-transparent data-[state=active]:text-secondary-foreground data-[state=active]:shadow-none"
+              className="flex-1 rounded-none border-b-2 border-transparent py-2.5 hover:border-foreground/40 text-foreground/70 data-[state=active]:border-white data-[state=active]:bg-transparent data-[state=active]:text-secondary-foreground data-[state=active]:shadow-none"
             >
               {mode.label}
             </TabsTrigger>
