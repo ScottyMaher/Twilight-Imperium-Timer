@@ -4,8 +4,8 @@ import { Player } from '@/types/index';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { v4 as uuidv4 } from 'uuid';
-import { Reorder } from 'framer-motion';
-import { ArrowLeft } from 'lucide-react';
+import { Reorder, useDragControls } from 'framer-motion';
+import { ArrowLeft, GripVertical } from 'lucide-react';
 
 interface PlayerInputFormProps {
   players: Player[];
@@ -14,12 +14,90 @@ interface PlayerInputFormProps {
   onBack?: () => void;
 }
 
+interface PlayerRowProps {
+  player: Player;
+  playersCount: number;
+  onNameChange: (id: string, name: string) => void;
+  onRemove: (id: string) => void;
+  onDragStateChange: (isDragging: boolean) => void;
+  dragConstraintsRef: React.RefObject<HTMLDivElement>;
+}
+
+const PlayerRow: React.FC<PlayerRowProps> = ({
+  player,
+  playersCount,
+  onNameChange,
+  onRemove,
+  onDragStateChange,
+  dragConstraintsRef,
+}) => {
+  const dragControls = useDragControls();
+
+  return (
+    <Reorder.Item
+      key={player.id}
+      value={player}
+      dragListener={false}
+      dragControls={dragControls}
+      dragConstraints={dragConstraintsRef}
+      onDragStart={() => onDragStateChange(true)}
+      onDragEnd={() => onDragStateChange(false)}
+      className="flex items-center space-x-2"
+    >
+      <button
+        type="button"
+        aria-label={`Drag ${player.name || 'player'} row`}
+        onPointerDown={(e) => dragControls.start(e)}
+        onPointerUp={() => onDragStateChange(false)}
+        className="rounded text-neutral-100/70 cursor-grab active:cursor-grabbing hover:text-white"
+      >
+        <GripVertical className="h-5 w-5" />
+      </button>
+      <Input
+        className="outline outline-1 outline-neutral-100/50"
+        value={player.name}
+        onChange={(e) => onNameChange(player.id, e.target.value)}
+        required
+      />
+      {playersCount > 1 && (
+        <Button
+          type="button"
+          variant="destructive"
+          onClick={() => onRemove(player.id)}
+        >
+          Remove
+        </Button>
+      )}
+    </Reorder.Item>
+  );
+};
+
 const PlayerInputForm: React.FC<PlayerInputFormProps> = ({
   players,
   setPlayers,
   onStart,
   onBack,
 }) => {
+  const [isReordering, setIsReordering] = React.useState<boolean>(false);
+  const previousCursorRef = React.useRef<string>('');
+  const reorderContainerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    if (isReordering) {
+      previousCursorRef.current = document.body.style.cursor;
+      document.body.style.cursor = 'grabbing';
+      return;
+    }
+
+    document.body.style.cursor = previousCursorRef.current;
+
+    return () => {
+      document.body.style.cursor = previousCursorRef.current;
+    };
+  }, [isReordering]);
+
   const handleNameChange = (id: string, name: string) => {
     setPlayers((prev) =>
       prev.map((player) =>
@@ -65,28 +143,21 @@ const PlayerInputForm: React.FC<PlayerInputFormProps> = ({
         }}
       >
         <h1 className="text-2xl font-bold text-center">Enter Player Names</h1>
-        <Reorder.Group axis="y" values={players} onReorder={setPlayers} className="space-y-4">
-          {players.map((player) => (
-            <Reorder.Item key={player.id} value={player} className="flex items-center space-x-2">
-              <Input
-                // label={`Player ${index + 1}`}
-                className='outline outline-1 outline-neutral-100/50'
-                value={player.name}
-                onChange={(e) => handleNameChange(player.id, e.target.value)}
-                required
+        <div ref={reorderContainerRef}>
+          <Reorder.Group axis="y" values={players} onReorder={setPlayers} className="space-y-4">
+            {players.map((player) => (
+              <PlayerRow
+                key={player.id}
+                player={player}
+                playersCount={players.length}
+                onNameChange={handleNameChange}
+                onRemove={handleRemovePlayer}
+                onDragStateChange={setIsReordering}
+                dragConstraintsRef={reorderContainerRef}
               />
-              {players.length > 1 && (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => handleRemovePlayer(player.id)}
-                >
-                  Remove
-                </Button>
-              )}
-            </Reorder.Item>
-          ))}
-        </Reorder.Group>
+            ))}
+          </Reorder.Group>
+        </div>
         {players.length < 6 && (
           <Button type="button" onClick={handleAddPlayer}>
             Add Player
