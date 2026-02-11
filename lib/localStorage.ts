@@ -2,6 +2,7 @@ import { Player } from '@/types/index';
 
 const PLAYERS_KEY = 'players';
 const TIMER_STATE_KEY = 'timerState';
+const MODE_CONFIG_KEY = 'modeConfig';
 
 export const loadPlayers = (): Player[] => {
   if (typeof window === 'undefined') return [];
@@ -28,12 +29,34 @@ export const savePlayers = (players: Player[]) => {
   localStorage.setItem(PLAYERS_KEY, JSON.stringify(players));
 };
 
-export const loadTimerState = () => {
+interface TimerState {
+  players: Player[];
+  currentPlayerIndex: number;
+  isRunning: boolean;
+  isPaused: boolean;
+  modeId: string;
+  modeConfig: unknown;
+}
+
+export const loadTimerState = (): TimerState | null => {
   if (typeof window === 'undefined') return null;
   const stored = localStorage.getItem(TIMER_STATE_KEY);
   if (stored) {
     try {
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      // Validate expected schema
+      if (
+        parsed &&
+        Array.isArray(parsed.players) &&
+        typeof parsed.currentPlayerIndex === 'number' &&
+        typeof parsed.isRunning === 'boolean' &&
+        typeof parsed.isPaused === 'boolean' &&
+        typeof parsed.modeId === 'string'
+      ) {
+        return parsed as TimerState;
+      }
+      // Schema mismatch — discard
+      localStorage.removeItem(TIMER_STATE_KEY);
     } catch (error) {
       console.error('Failed to parse timer state from localStorage', error);
     }
@@ -41,7 +64,7 @@ export const loadTimerState = () => {
   return null;
 };
 
-export const saveTimerState = (state: { players: Player[], currentPlayerIndex: number, isRunning: boolean, isPaused: boolean}) => {
+export const saveTimerState = (state: TimerState) => {
   if (typeof window === 'undefined') return;
   localStorage.setItem(TIMER_STATE_KEY, JSON.stringify(state));
 };
@@ -49,4 +72,30 @@ export const saveTimerState = (state: { players: Player[], currentPlayerIndex: n
 export const clearTimerState = () => {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(TIMER_STATE_KEY);
+};
+
+interface ModeConfig {
+  modeId: string;
+  config: unknown;
+}
+
+export const loadModeConfig = (): ModeConfig | null => {
+  if (typeof window === 'undefined') return null;
+  const stored = localStorage.getItem(MODE_CONFIG_KEY);
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (parsed && typeof parsed.modeId === 'string') {
+        return parsed as ModeConfig;
+      }
+    } catch (error) {
+      console.error('Failed to parse mode config from localStorage', error);
+    }
+  }
+  return null;
+};
+
+export const saveModeConfig = (modeId: string, config: unknown) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(MODE_CONFIG_KEY, JSON.stringify({ modeId, config }));
 };

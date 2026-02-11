@@ -1,45 +1,44 @@
 // components/Controls.tsx
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Pause, Play, ArrowBigRight } from 'lucide-react';
+import { ArrowLeft, ArrowBigLeft, ArrowBigRight } from 'lucide-react';
 
 interface ControlsProps {
+  onPrevTurn: () => void;
   onEndTurn: () => void;
-  onPause: () => void;
-  onResume: () => void;
   onBack: () => void;
-  isPaused: boolean;
 }
 
 const Controls: React.FC<ControlsProps> = ({
+  onPrevTurn,
   onEndTurn,
-  onPause,
-  onResume,
   onBack,
-  isPaused,
 }) => {
   return (
-    <div className="flex flex-col md:flex-row space-y-4 md:space-x-4 justify-center mb-6">
-      <Button variant="ghost" onClick={onBack} className="md:absolute md:top-6 md:left-6">
+    <>
+      <Button variant="ghost" onClick={onBack} className="absolute top-6 left-6">
         <ArrowLeft />
         Back
       </Button>
-      {!isPaused ? (
-        <Button variant="outline" className="outline outline-1 outline-neutral-100/50" onClick={onPause}>
-          Pause
-          <Pause fill='white' strokeWidth={0} />
+
+      <div className="mt-4 md:mb-6 w-full flex flex-row gap-3 justify-center">
+        <Button
+          variant="outline"
+          onClick={onPrevTurn}
+          className="h-24 md:h-auto w-1/3"
+        >
+          <ArrowBigLeft absoluteStrokeWidth />
+          Prev Turn
         </Button>
-      ) : (
-        <Button variant="outline" onClick={onResume}>
-          Resume
-          <Play fill='white' strokeWidth={0} />
+        <Button
+          onClick={onEndTurn}
+          className="h-24 md:h-auto w-2/3"
+        >
+          End Turn
+          <ArrowBigRight absoluteStrokeWidth />
         </Button>
-      )}
-      <Button onClick={onEndTurn}>
-        End Turn
-        <ArrowBigRight absoluteStrokeWidth />
-      </Button>
-    </div>
+      </div>
+    </>
   );
 };
 
