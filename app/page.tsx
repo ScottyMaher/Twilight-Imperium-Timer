@@ -13,6 +13,7 @@ import {
   clearTimerState
 } from '@/lib/localStorage';
 import { motion, AnimatePresence } from 'framer-motion';
+import StarField from '@/components/StarField';
 
 const Home: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>(() => loadPlayers());
@@ -50,17 +51,19 @@ const Home: React.FC = () => {
     }
   }, [players, isLoading]);
 
-  // Save timer state to localStorage whenever relevant state changes
+  // Periodic save to localStorage every 60 seconds while running
+  const latestStateRef = useRef({ players, currentPlayerIndex, isPaused });
+  latestStateRef.current = { players, currentPlayerIndex, isPaused };
+
   useEffect(() => {
     if (!isLoading && isRunning) {
-      saveTimerState({
-        players,
-        currentPlayerIndex,
-        isRunning,
-        isPaused,
-      });
+      const saveInterval = setInterval(() => {
+        const { players, currentPlayerIndex, isPaused } = latestStateRef.current;
+        saveTimerState({ players, currentPlayerIndex, isRunning: true, isPaused });
+      }, 60000);
+      return () => clearInterval(saveInterval);
     }
-  }, [players, currentPlayerIndex, isRunning, isPaused, isLoading]);
+  }, [isRunning, isLoading]);
 
   // Timer effect
   useEffect(() => {
@@ -81,20 +84,24 @@ const Home: React.FC = () => {
     };
   }, [isRunning, isPaused, currentPlayerIndex, isLoading]);
 
-  // Handle spacebar press
-  useEffect(() => {
-    if (isLoading) return;
+  // Handle spacebar press — only while timer is actively running
+  const isRunningRef = useRef(isRunning);
+  const isPausedRef = useRef(isPaused);
+  const handleEndTurnRef = useRef<() => void>(() => {});
+  isRunningRef.current = isRunning;
+  isPausedRef.current = isPaused;
 
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
+      if (e.code === 'Space' && isRunningRef.current && !isPausedRef.current) {
         e.preventDefault();
-        handleEndTurn();
+        handleEndTurnRef.current();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  });
+  }, []);
 
   const handleStart = () => {
     const filledPlayers = players.filter(
@@ -113,24 +120,23 @@ const Home: React.FC = () => {
     if (!isRunning || isPaused) return;
     if (timerRef.current) clearInterval(timerRef.current);
 
-    // Update the current player's time one last time
-    setPlayers((prevPlayers) =>
-      prevPlayers.map((player, index) =>
-        index === currentPlayerIndex
-          ? { ...player, time: player.time + 1 }
-          : player
-      )
+    const updatedPlayers = players.map((player, index) =>
+      index === currentPlayerIndex
+        ? { ...player, time: player.time + 1 }
+        : player
     );
+    const nextIndex = currentPlayerIndex + 1 < players.length ? currentPlayerIndex + 1 : 0;
 
-    // Update the current player index
-    setCurrentPlayerIndex((prevIndex) =>
-      prevIndex + 1 < players.length ? prevIndex + 1 : 0
-    );
+    setPlayers(updatedPlayers);
+    setCurrentPlayerIndex(nextIndex);
+    saveTimerState({ players: updatedPlayers, currentPlayerIndex: nextIndex, isRunning: true, isPaused: false });
   };
+  handleEndTurnRef.current = handleEndTurn;
 
   const handlePause = () => {
     setIsPaused(true);
     if (timerRef.current) clearInterval(timerRef.current);
+    saveTimerState({ players, currentPlayerIndex, isRunning: true, isPaused: true });
   };
 
   const handleResume = () => {
@@ -153,6 +159,8 @@ const Home: React.FC = () => {
   }
 
   return (
+    <>
+    <StarField animated={!isRunning} />
     <AnimatePresence>
       <motion.div
         key="main-content"
@@ -185,6 +193,7 @@ const Home: React.FC = () => {
         )}
       </motion.div>
     </AnimatePresence>
+    </>
   );
 };
 

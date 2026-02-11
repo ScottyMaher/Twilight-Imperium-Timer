@@ -11,9 +11,6 @@
   z-index: -1;
 }
 
-/* Remove the ::before and ::after pseudo-elements */
-
-/* Twinkling effect */
 @keyframes twinkle {
   0%,
   100% {
@@ -28,6 +25,8 @@
   position: absolute;
   background-color: white;
   border-radius: 50%;
-  opacity: 0.8;
+}
+
+.animated {
   animation: twinkle 2s infinite;
 }

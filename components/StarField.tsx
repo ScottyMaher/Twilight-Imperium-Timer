@@ -7,31 +7,33 @@ interface Star {
   id: number;
   top: string;
   left: string;
-  size: number; // Star size in pixels
+  size: number;
   animationDelay: string;
+  staticOpacity: number;
 }
 
-const StarField: React.FC = () => {
+interface StarFieldProps {
+  animated?: boolean;
+}
+
+const StarField: React.FC<StarFieldProps> = ({ animated = true }) => {
   const [stars, setStars] = useState<Star[]>([]);
 
   useEffect(() => {
-    const generateStars = () => {
-      const starCount = 100; // Adjust for star density
-      const generatedStars: Star[] = [];
-      for (let i = 0; i < starCount; i++) {
-        const size = Math.random() * 2 + 1; // Star size between 1px and 3px
-        generatedStars.push({
-          id: i,
-          top: `${Math.random() * 100}%`,
-          left: `${Math.random() * 100}%`,
-          size,
-          animationDelay: `${Math.random() * 5}s`,
-        });
-      }
-      setStars(generatedStars);
-    };
-
-    generateStars();
+    const starCount = 100;
+    const generatedStars: Star[] = [];
+    for (let i = 0; i < starCount; i++) {
+      const size = Math.random() * 2 + 1;
+      generatedStars.push({
+        id: i,
+        top: `${Math.random() * 100}%`,
+        left: `${Math.random() * 100}%`,
+        size,
+        animationDelay: `${Math.random() * 5}s`,
+        staticOpacity: Math.random() * 0.6 + 0.2, // 0.2 to 0.8
+      });
+    }
+    setStars(generatedStars);
   }, []);
 
   return (
@@ -39,13 +41,15 @@ const StarField: React.FC = () => {
       {stars.map((star) => (
         <div
           key={star.id}
-          className={styles.star}
+          className={`${styles.star} ${animated ? styles.animated : ''}`}
           style={{
             top: star.top,
             left: star.left,
             width: `${star.size}px`,
             height: `${star.size}px`,
-            animationDelay: star.animationDelay,
+            ...(animated
+              ? { animationDelay: star.animationDelay }
+              : { opacity: star.staticOpacity }),
           }}
         />
       ))}
