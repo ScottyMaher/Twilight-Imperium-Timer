@@ -28,18 +28,22 @@ const TimerConfig: React.FC<TimerConfigProps> = ({
   const selectedMode = modes.find((m) => m.id === selectedModeId) as TimerMode | undefined;
 
   return (
-    <div className="w-full max-w-md space-y-4 bg-neutral-500/10 p-6 rounded shadow">
+    <div className="w-full max-w-md space-y-6 bg-neutral-500/10 p-7 rounded shadow">
       <h1 className="text-2xl font-bold text-center">Timer Mode</h1>
-      <Tabs value={selectedModeId} onValueChange={handleTabChange}>
-        <TabsList className="w-full">
+      <Tabs value={selectedModeId} onValueChange={handleTabChange} className="space-y-6">
+        <TabsList className="w-full h-auto bg-foreground/5 p-1">
           {modes.map((mode) => (
-            <TabsTrigger key={mode.id} value={mode.id} className="flex-1">
+            <TabsTrigger
+              key={mode.id}
+              value={mode.id}
+              className="flex-1 rounded-none border-b-2 border-transparent py-2.5 text-foreground/70 data-[state=active]:border-white data-[state=active]:bg-transparent data-[state=active]:text-secondary-foreground data-[state=active]:shadow-none"
+            >
               {mode.label}
             </TabsTrigger>
           ))}
         </TabsList>
         {modes.map((mode) => (
-          <TabsContent key={mode.id} value={mode.id} className="space-y-4">
+          <TabsContent key={mode.id} value={mode.id} className="space-y-6 pt-1">
             <p className="text-sm text-muted-foreground">{mode.description}</p>
             <mode.ConfigComponent
               config={modeConfig}
