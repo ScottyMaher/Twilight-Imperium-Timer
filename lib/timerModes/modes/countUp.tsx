@@ -27,7 +27,7 @@ const countUpMode: TimerMode<CountUpConfig> = {
   PlayerCardContent: ({ player }: { player: Player }) => (
     <>
       <p className="text-xl md:text-4xl font-semibold">{player.name}</p>
-      <p className="text-xl md:text-4xl">{formatTime(player.time)}</p>
+      <p className="text-xl md:text-4xl tabular-nums">{formatTime(player.time)}</p>
     </>
   ),
 };

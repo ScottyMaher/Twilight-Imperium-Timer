@@ -93,7 +93,7 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
     return (
       <div className={isCurrent && inReserve ? 'text-red-400' : ''}>
         <p className="text-xl md:text-4xl font-semibold">{p.name}</p>
-        <div className="flex justify-between text-xl md:text-4xl">
+        <div className="flex justify-between text-xl md:text-4xl tabular-nums">
           <span>{formatTime(actionTime)}</span>
           <span className="text-muted-foreground text-lg md:text-2xl">
             +{formatTime(reserve)}
