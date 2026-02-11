@@ -10,12 +10,14 @@ interface PlayerInputFormProps {
   players: Player[];
   setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
   onStart: () => void;
+  onBack?: () => void;
 }
 
 const PlayerInputForm: React.FC<PlayerInputFormProps> = ({
   players,
   setPlayers,
   onStart,
+  onBack,
 }) => {
   const handleNameChange = (id: string, name: string) => {
     setPlayers((prev) =>
@@ -82,9 +84,16 @@ const PlayerInputForm: React.FC<PlayerInputFormProps> = ({
           Add Player
         </Button>
       )}
-      <Button type="submit" className="w-full">
-        Start
-      </Button>
+      <div className="flex gap-2">
+        {onBack && (
+          <Button type="button" variant="outline" onClick={onBack}>
+            Back
+          </Button>
+        )}
+        <Button type="submit" className="w-full">
+          Start
+        </Button>
+      </div>
     </form>
   );
 };

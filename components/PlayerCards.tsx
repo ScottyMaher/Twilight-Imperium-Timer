@@ -1,17 +1,21 @@
 // components/PlayerCards.tsx
 import React from 'react';
 import { Player } from '../types';
-import { formatTime } from '@/lib/formatTime';
+import { TimerMode } from '@/lib/timerModes';
 import { motion } from 'framer-motion';
 
 interface PlayerCardsProps {
   players: Player[];
   currentPlayerIndex: number;
+  mode: TimerMode;
+  modeConfig: unknown;
 }
 
 const PlayerCards: React.FC<PlayerCardsProps> = ({
   players,
   currentPlayerIndex,
+  mode,
+  modeConfig,
 }) => {
   // Compute the visual order of the players
   const visualOrder = players.map(
@@ -36,6 +40,8 @@ const PlayerCards: React.FC<PlayerCardsProps> = ({
           opacity = 0.8;
         }
 
+        const isCurrent = index === 0;
+
         return (
           <motion.div
             key={player.id}
@@ -47,11 +53,11 @@ const PlayerCards: React.FC<PlayerCardsProps> = ({
               zIndex: players.length - index,
             }}
           >
-            {/* <h3 className="text-lg font-semibold">
-              {index === 0 ? 'Current Player' : `Next Player ${index}`}
-            </h3> */}
-            <p className="text-xl md:text-4xl font-semibold">{player.name}</p>
-            <p className="text-xl md:text-4xl">{formatTime(player.time)}</p>
+            <mode.PlayerCardContent
+              player={player}
+              isCurrent={isCurrent}
+              config={modeConfig}
+            />
           </motion.div>
         );
       })}

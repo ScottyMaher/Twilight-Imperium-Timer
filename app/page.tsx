@@ -4,75 +4,103 @@ import { useState, useEffect, useRef } from 'react';
 import Controls from '@/components/controls'
 import PlayerInputForm from '@/components/player-input-form'
 import PlayerCards from '@/components/PlayerCards'
+import TimerConfig from '@/components/TimerConfig'
 import { Player } from '@/types/index';
+import { getTimerMode, getAllTimerModes } from '@/lib/timerModes';
 import {
   loadPlayers,
   savePlayers,
   loadTimerState,
   saveTimerState,
-  clearTimerState
+  clearTimerState,
+  loadModeConfig,
+  saveModeConfig,
 } from '@/lib/localStorage';
 import { motion, AnimatePresence } from 'framer-motion';
 import StarField from '@/components/StarField';
 
+type Phase = 'configure' | 'players' | 'running';
+
 const Home: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>(() => loadPlayers());
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState<number>(0);
-  const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [phase, setPhase] = useState<Phase>('configure');
   const [isPaused, setIsPaused] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // Add loading state
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Mode state — initialize from saved config or default to first mode
+  const [selectedModeId, setSelectedModeId] = useState<string>(() => {
+    const saved = loadModeConfig();
+    return saved?.modeId ?? getAllTimerModes()[0]?.id ?? 'countUp';
+  });
+  const [modeConfig, setModeConfig] = useState<unknown>(() => {
+    const saved = loadModeConfig();
+    if (saved) {
+      const mode = getTimerMode(saved.modeId);
+      if (mode) return saved.config;
+    }
+    return getAllTimerModes()[0]?.defaultConfig ?? {};
+  });
+
+  const activeMode = getTimerMode(selectedModeId);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load timer state if exists
   useEffect(() => {
-    const loadData = () => {
-      const storedPlayers = loadPlayers();
-      const storedState = loadTimerState();
+    const storedState = loadTimerState();
 
-      if (storedState && storedState.isRunning) {
+    if (storedState && storedState.isRunning) {
+      const mode = getTimerMode(storedState.modeId);
+      if (mode) {
         setPlayers(storedState.players);
         setCurrentPlayerIndex(storedState.currentPlayerIndex);
-        setIsRunning(storedState.isRunning);
+        setSelectedModeId(storedState.modeId);
+        setModeConfig(storedState.modeConfig);
+        setPhase('running');
         setIsPaused(storedState.isPaused);
-      } else {
-        setPlayers(storedPlayers);
+        setHasStarted(true);
       }
+    }
 
-      setIsLoading(false); // Data is loaded
-    };
-
-    loadData();
+    setIsLoading(false);
   }, []);
 
-  // Save players to localStorage whenever they change
+  // Save players to localStorage whenever they change (but not while running — periodic save handles that)
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && phase !== 'running') {
       savePlayers(players);
     }
-  }, [players, isLoading]);
+  }, [players, isLoading, phase]);
 
   // Periodic save to localStorage every 60 seconds while running
-  const latestStateRef = useRef({ players, currentPlayerIndex, isPaused });
-  latestStateRef.current = { players, currentPlayerIndex, isPaused };
+  const latestStateRef = useRef({ players, currentPlayerIndex, isPaused, selectedModeId, modeConfig });
+  latestStateRef.current = { players, currentPlayerIndex, isPaused, selectedModeId, modeConfig };
 
   useEffect(() => {
-    if (!isLoading && isRunning) {
+    if (!isLoading && phase === 'running') {
       const saveInterval = setInterval(() => {
-        const { players, currentPlayerIndex, isPaused } = latestStateRef.current;
-        saveTimerState({ players, currentPlayerIndex, isRunning: true, isPaused });
+        const { players, currentPlayerIndex, isPaused, selectedModeId, modeConfig } = latestStateRef.current;
+        saveTimerState({
+          players,
+          currentPlayerIndex,
+          isRunning: true,
+          isPaused,
+          modeId: selectedModeId,
+          modeConfig,
+        });
       }, 60000);
       return () => clearInterval(saveInterval);
     }
-  }, [isRunning, isLoading]);
+  }, [phase, isLoading]);
 
-  // Timer effect
+  // Timer effect — delegates to active mode's onTick
   useEffect(() => {
-    if (!isLoading && isRunning && !isPaused) {
+    if (!isLoading && phase === 'running' && !isPaused && activeMode) {
       timerRef.current = setInterval(() => {
         setPlayers((prevPlayers) =>
           prevPlayers.map((player, index) =>
             index === currentPlayerIndex
-              ? { ...player, time: player.time + 1 }
+              ? activeMode.onTick(player, modeConfig)
               : player
           )
         );
@@ -82,18 +110,18 @@ const Home: React.FC = () => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isRunning, isPaused, currentPlayerIndex, isLoading]);
+  }, [phase, isPaused, currentPlayerIndex, isLoading, activeMode, modeConfig]);
 
   // Handle spacebar press — only while timer is actively running
-  const isRunningRef = useRef(isRunning);
+  const phaseRef = useRef(phase);
   const isPausedRef = useRef(isPaused);
   const handleEndTurnRef = useRef<() => void>(() => {});
-  isRunningRef.current = isRunning;
+  phaseRef.current = phase;
   isPausedRef.current = isPaused;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space' && isRunningRef.current && !isPausedRef.current) {
+      if (e.code === 'Space' && phaseRef.current === 'running' && !isPausedRef.current) {
         e.preventDefault();
         handleEndTurnRef.current();
       }
@@ -103,7 +131,28 @@ const Home: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const handleModeChange = (modeId: string, config: unknown) => {
+    setSelectedModeId(modeId);
+    setModeConfig(config);
+    saveModeConfig(modeId, config);
+  };
+
+  const handleConfigNext = () => {
+    setPhase('players');
+  };
+
+  const [hasStarted, setHasStarted] = useState<boolean>(false);
+
   const handleStart = () => {
+    if (!activeMode) return;
+
+    // If already started (coming back from running), just resume
+    if (hasStarted) {
+      setPhase('running');
+      setIsPaused(false);
+      return;
+    }
+
     const filledPlayers = players.filter(
       (player) => player.name.trim() !== ''
     );
@@ -111,46 +160,70 @@ const Home: React.FC = () => {
       alert('Please enter at least one player name.');
       return;
     }
-    setIsRunning(true);
+    // Initialize players with mode-specific fields
+    const initializedPlayers = filledPlayers.map((p) =>
+      activeMode.initializePlayer({ ...p, time: 0 }, modeConfig)
+    );
+    setPlayers(initializedPlayers);
+    setHasStarted(true);
+    setPhase('running');
     setIsPaused(false);
     setCurrentPlayerIndex(0);
   };
 
   const handleEndTurn = () => {
-    if (!isRunning || isPaused) return;
+    if (phase !== 'running' || isPaused || !activeMode) return;
     if (timerRef.current) clearInterval(timerRef.current);
 
     const updatedPlayers = players.map((player, index) =>
       index === currentPlayerIndex
-        ? { ...player, time: player.time + 1 }
+        ? activeMode.onEndTurn(player, modeConfig)
         : player
     );
     const nextIndex = currentPlayerIndex + 1 < players.length ? currentPlayerIndex + 1 : 0;
 
     setPlayers(updatedPlayers);
     setCurrentPlayerIndex(nextIndex);
-    saveTimerState({ players: updatedPlayers, currentPlayerIndex: nextIndex, isRunning: true, isPaused: false });
+    saveTimerState({
+      players: updatedPlayers,
+      currentPlayerIndex: nextIndex,
+      isRunning: true,
+      isPaused: false,
+      modeId: selectedModeId,
+      modeConfig,
+    });
   };
   handleEndTurnRef.current = handleEndTurn;
 
   const handlePause = () => {
     setIsPaused(true);
     if (timerRef.current) clearInterval(timerRef.current);
-    saveTimerState({ players, currentPlayerIndex, isRunning: true, isPaused: true });
+    saveTimerState({
+      players,
+      currentPlayerIndex,
+      isRunning: true,
+      isPaused: true,
+      modeId: selectedModeId,
+      modeConfig,
+    });
   };
 
   const handleResume = () => {
     setIsPaused(false);
   };
 
-  const handleBack = () => {
-    setIsRunning(false);
+  const handleBackToPlayers = () => {
+    setPhase('players');
     setIsPaused(false);
+  };
+
+  const handleBackToConfigure = () => {
+    setPhase('configure');
+    setHasStarted(false);
     clearTimerState();
   };
 
   if (isLoading) {
-    // Display a loading indicator while data is loading
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-white text-xl">Loading...</div>
@@ -160,7 +233,7 @@ const Home: React.FC = () => {
 
   return (
     <>
-    <StarField animated={!isRunning} />
+    <StarField animated={phase !== 'running'} />
     <AnimatePresence>
       <motion.div
         key="main-content"
@@ -170,24 +243,36 @@ const Home: React.FC = () => {
         transition={{ duration: 0.5 }}
         className="flex flex-col items-center justify-start md:justify-center min-h-screen p-4 bg-transparent"
       >
-        {!isRunning ? (
+        {phase === 'configure' && (
+          <TimerConfig
+            selectedModeId={selectedModeId}
+            modeConfig={modeConfig}
+            onModeChange={handleModeChange}
+            onNext={handleConfigNext}
+          />
+        )}
+        {phase === 'players' && (
           <PlayerInputForm
             players={players}
             setPlayers={setPlayers}
             onStart={handleStart}
+            onBack={handleBackToConfigure}
           />
-        ) : (
+        )}
+        {phase === 'running' && activeMode && (
           <div className="w-full max-w-md">
             <Controls
               onEndTurn={handleEndTurn}
               onPause={handlePause}
               onResume={handleResume}
-              onBack={handleBack}
+              onBack={handleBackToPlayers}
               isPaused={isPaused}
             />
             <PlayerCards
               players={players}
               currentPlayerIndex={currentPlayerIndex}
+              mode={activeMode}
+              modeConfig={modeConfig}
             />
           </div>
         )}
