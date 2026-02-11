@@ -25,14 +25,14 @@ const Controls: React.FC<ControlsProps> = ({
         <Button
           variant="outline"
           onClick={onPrevTurn}
-          className="h-24 md:h-auto w-1/3 text-base"
+          className="h-24 md:h-auto w-1/3"
         >
           <ArrowBigLeft absoluteStrokeWidth />
           Prev Turn
         </Button>
         <Button
           onClick={onEndTurn}
-          className="h-24 md:h-auto w-2/3 text-base"
+          className="h-24 md:h-auto w-2/3"
         >
           End Turn
           <ArrowBigRight absoluteStrokeWidth />
