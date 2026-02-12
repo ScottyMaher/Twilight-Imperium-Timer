@@ -180,7 +180,7 @@ const Home: React.FC = () => {
     setPlayers(initializedPlayers);
     setHasStarted(true);
     setPhase('running');
-    setIsPaused(false);
+    setIsPaused(true);
     setCurrentPlayerIndex(0);
   };
 
