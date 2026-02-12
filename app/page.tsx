@@ -19,7 +19,10 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import StarField from '@/components/StarField';
 import { Dialog, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
-import { Play } from 'lucide-react';
+import { Play, SkipForward } from 'lucide-react';
+import { formatTimeShort } from '@/lib/formatTime';
+import { ActionTimerConfig } from '@/lib/timerModes/modes/actionTimer';
+import { Button } from '@/components/ui/button';
 
 type Phase = 'configure' | 'players' | 'running';
 const TWILIGHT_IMPERIUM_LOGO_URL = 'https://cdn.svc.asmodee.net/production-aconytebooks/uploads/image-converter/2020/04/TWI-Twilight-Imperium-logo.webp';
@@ -45,6 +48,8 @@ const Home: React.FC = () => {
     }
     return getAllTimerModes()[0]?.defaultConfig ?? {};
   });
+
+  const [startOfRoundRemaining, setStartOfRoundRemaining] = useState<number | null>(null);
 
   const activeMode = getTimerMode(selectedModeId);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -97,24 +102,31 @@ const Home: React.FC = () => {
     }
   }, [phase, isLoading]);
 
-  // Timer effect — delegates to active mode's onTick
+  // Timer effect — delegates to active mode's onTick, also handles start-of-round countdown
   useEffect(() => {
     if (!isLoading && phase === 'running' && !isPaused && activeMode) {
       timerRef.current = setInterval(() => {
-        setPlayers((prevPlayers) =>
-          prevPlayers.map((player, index) =>
-            index === currentPlayerIndex
-              ? activeMode.onTick(player, modeConfig)
-              : player
-          )
-        );
+        if (startOfRoundRemaining !== null && startOfRoundRemaining > 0) {
+          setStartOfRoundRemaining(prev => {
+            if (prev === null || prev <= 1) return null;
+            return prev - 1;
+          });
+        } else {
+          setPlayers((prevPlayers) =>
+            prevPlayers.map((player, index) =>
+              index === currentPlayerIndex
+                ? activeMode.onTick(player, modeConfig)
+                : player
+            )
+          );
+        }
       }, 1000);
     }
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [phase, isPaused, currentPlayerIndex, isLoading, activeMode, modeConfig]);
+  }, [phase, isPaused, currentPlayerIndex, isLoading, activeMode, modeConfig, startOfRoundRemaining]);
 
   // Handle spacebar press — only while timer is actively running
   const phaseRef = useRef(phase);
@@ -145,6 +157,10 @@ const Home: React.FC = () => {
     setPhase('players');
   };
 
+  const handleSkipCountdown = () => {
+    setStartOfRoundRemaining(null);
+  };
+
   const [hasStarted, setHasStarted] = useState<boolean>(false);
 
   const handleStart = () => {
@@ -154,7 +170,13 @@ const Home: React.FC = () => {
     if (hasStarted) {
       setCurrentPlayerIndex(0);
       setPhase('running');
-      setIsPaused(true);
+      if (selectedModeId === 'actionTimer') {
+        const countdown = (modeConfig as ActionTimerConfig).startOfRoundTime;
+        setStartOfRoundRemaining(countdown);
+        setIsPaused(false);
+      } else {
+        setIsPaused(true);
+      }
       saveTimerState({
         players,
         currentPlayerIndex: 0,
@@ -180,8 +202,14 @@ const Home: React.FC = () => {
     setPlayers(initializedPlayers);
     setHasStarted(true);
     setPhase('running');
-    setIsPaused(true);
     setCurrentPlayerIndex(0);
+    if (selectedModeId === 'actionTimer') {
+      const countdown = (modeConfig as ActionTimerConfig).startOfRoundTime;
+      setStartOfRoundRemaining(countdown);
+      setIsPaused(false);
+    } else {
+      setIsPaused(true);
+    }
   };
 
   const handleEndTurn = () => {
@@ -360,6 +388,20 @@ const Home: React.FC = () => {
               onClick={handleResume}
             >
               <Play className="h-20 w-20 text-white/80 drop-shadow-lg" fill="currentColor" strokeWidth={0} />
+            </div>
+          </DialogPortal>
+        </Dialog>
+        <Dialog open={startOfRoundRemaining !== null && startOfRoundRemaining > 0} onOpenChange={() => {}}>
+          <DialogPortal>
+            <DialogOverlay className="bg-black/40" />
+            <div className="fixed inset-0 z-50 flex flex-col items-center justify-center">
+              <span className="text-8xl md:text-9xl font-bold text-white tabular-nums drop-shadow-lg tabular-nums">
+                {startOfRoundRemaining !== null ? formatTimeShort(startOfRoundRemaining) : ''}
+              </span>
+              <Button variant="ghost" onClick={handleSkipCountdown} className="mt-8 text-white/80">
+                Skip
+                <SkipForward className="ml-2 h-5 w-5" />
+              </Button>
             </div>
           </DialogPortal>
         </Dialog>

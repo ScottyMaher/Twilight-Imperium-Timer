@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 export interface ActionTimerConfig {
   actionTimePerTurn: number;
   startingReserveTime: number;
+  startOfRoundTime: number;
 }
 
 interface ActionTimerPlayer extends Player {
@@ -24,15 +25,26 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
   defaultConfig: {
     actionTimePerTurn: 60,
     startingReserveTime: 900,
+    startOfRoundTime: 300,
   },
 
   ConfigComponent: ({ config, onConfigChange }) => (
     <div className="space-y-6">
       <div className="space-y-2">
+        <Label>Start of Round Time: {formatTimeShort(config.startOfRoundTime)}</Label>
+        <Slider
+          min={60}
+          max={600}
+          step={60}
+          value={[config.startOfRoundTime]}
+          onValueChange={([v]) => onConfigChange({ ...config, startOfRoundTime: v })}
+        />
+      </div>
+      <div className="space-y-2">
         <Label>Action Time Per Turn: {formatTimeShort(config.actionTimePerTurn)}</Label>
         <Slider
           min={15}
-          max={300}
+          max={180}
           step={15}
           value={[config.actionTimePerTurn]}
           onValueChange={([v]) => onConfigChange({ ...config, actionTimePerTurn: v })}
@@ -42,7 +54,7 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
         <Label>Starting Reserve Time: {formatTime(config.startingReserveTime)}</Label>
         <Slider
           min={60}
-          max={3600}
+          max={2700}
           step={60}
           value={[config.startingReserveTime]}
           onValueChange={([v]) => onConfigChange({ ...config, startingReserveTime: v })}
@@ -95,7 +107,7 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
         <p className="text-xl md:text-4xl font-semibold">{p.name}</p>
         <div className="flex justify-between text-xl md:text-4xl tabular-nums">
           <span>{formatTimeShort(actionTime)}</span>
-          <span className="text-muted-foreground text-lg md:text-2xl">
+          <span className="text-muted-foreground text-lg md:text-2xl tabular-nums">
             +{formatTime(reserve)}
           </span>
         </div>
