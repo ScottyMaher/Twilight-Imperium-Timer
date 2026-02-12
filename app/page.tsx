@@ -336,6 +336,7 @@ const Home: React.FC = () => {
   };
 
   const handleScreenTap = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (phase !== 'running') return;
     if (!isPaused && !(e.target as HTMLElement).closest('button')) {
       handlePause();
     } else if (isPaused && !(e.target as HTMLElement).closest('button')) {
