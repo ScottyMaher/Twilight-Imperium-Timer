@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import { motion } from 'framer-motion';
 import { TimerMode } from '../types';
 import { registerTimerMode } from '../registry';
-import { formatTime } from '@/lib/formatTime';
+import { formatTime, formatTimeShort } from '@/lib/formatTime';
 import { Player } from '@/types/index';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
@@ -9,6 +10,7 @@ import { Label } from '@/components/ui/label';
 export interface ActionTimerConfig {
   actionTimePerTurn: number;
   startingReserveTime: number;
+  startOfRoundTime: number;
 }
 
 interface ActionTimerPlayer extends Player {
@@ -24,15 +26,26 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
   defaultConfig: {
     actionTimePerTurn: 60,
     startingReserveTime: 900,
+    startOfRoundTime: 300,
   },
 
   ConfigComponent: ({ config, onConfigChange }) => (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Label>Action Time Per Turn: {formatTime(config.actionTimePerTurn)}</Label>
+        <Label>Start of Round Time: {formatTimeShort(config.startOfRoundTime)}</Label>
+        <Slider
+          min={60}
+          max={600}
+          step={60}
+          value={[config.startOfRoundTime]}
+          onValueChange={([v]) => onConfigChange({ ...config, startOfRoundTime: v })}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Action Time Per Turn: {formatTimeShort(config.actionTimePerTurn)}</Label>
         <Slider
           min={15}
-          max={300}
+          max={180}
           step={15}
           value={[config.actionTimePerTurn]}
           onValueChange={([v]) => onConfigChange({ ...config, actionTimePerTurn: v })}
@@ -42,7 +55,7 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
         <Label>Starting Reserve Time: {formatTime(config.startingReserveTime)}</Label>
         <Slider
           min={60}
-          max={3600}
+          max={2700}
           step={60}
           value={[config.startingReserveTime]}
           onValueChange={([v]) => onConfigChange({ ...config, startingReserveTime: v })}
@@ -90,14 +103,28 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
     const reserve = p.reserveTime ?? config.startingReserveTime;
     const inReserve = p.isInReserve ?? false;
 
+    const prevReserveRef = useRef(reserve);
+    const animationKeyRef = useRef(0);
+
+    if (reserve > prevReserveRef.current) {
+      animationKeyRef.current += 1;
+    }
+    prevReserveRef.current = reserve;
+
     return (
       <div className={isCurrent && inReserve ? 'text-red-400' : ''}>
         <p className="text-xl md:text-4xl font-semibold">{p.name}</p>
         <div className="flex justify-between text-xl md:text-4xl tabular-nums">
-          <span>{formatTime(actionTime)}</span>
-          <span className="text-muted-foreground text-lg md:text-2xl">
+          <span>{formatTimeShort(actionTime)}</span>
+          <motion.span
+            key={animationKeyRef.current}
+            initial={animationKeyRef.current > 0 ? { scale: 1.3, color: '#4ade80' } : false}
+            animate={{ scale: 1, color: '#a3a3a3' }}
+            transition={{ duration: 1, ease: 'backIn' }}
+            className="text-lg md:text-2xl tabular-nums"
+          >
             +{formatTime(reserve)}
-          </span>
+          </motion.span>
         </div>
       </div>
     );

@@ -19,10 +19,18 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import StarField from '@/components/StarField';
 import { Dialog, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
-import { Play } from 'lucide-react';
+import { Play, SkipForward } from 'lucide-react';
+import { formatTimeShort } from '@/lib/formatTime';
+import { ActionTimerConfig } from '@/lib/timerModes/modes/actionTimer';
+import { Button } from '@/components/ui/button';
+import { playSound, stopSound, preloadSounds } from '@/lib/sounds';
 
 type Phase = 'configure' | 'players' | 'running';
 const TWILIGHT_IMPERIUM_LOGO_URL = 'https://cdn.svc.asmodee.net/production-aconytebooks/uploads/image-converter/2020/04/TWI-Twilight-Imperium-logo.webp';
+
+// Delay offsets (ms) for fine-tuning sound sync with the tick
+const THREE_SECOND_COUNTDOWN_DELAY = 690;
+const ACTION_TIMER_USED_DELAY = 0;
 
 const Home: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>(() => loadPlayers());
@@ -46,6 +54,8 @@ const Home: React.FC = () => {
     return getAllTimerModes()[0]?.defaultConfig ?? {};
   });
 
+  const [startOfRoundRemaining, setStartOfRoundRemaining] = useState<number | null>(null);
+
   const activeMode = getTimerMode(selectedModeId);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -67,6 +77,7 @@ const Home: React.FC = () => {
     }
 
     setIsLoading(false);
+    preloadSounds();
   }, []);
 
   // Save players to localStorage whenever they change (but not while running — periodic save handles that)
@@ -97,24 +108,54 @@ const Home: React.FC = () => {
     }
   }, [phase, isLoading]);
 
-  // Timer effect — delegates to active mode's onTick
+  // Timer effect — delegates to active mode's onTick, also handles start-of-round countdown
   useEffect(() => {
     if (!isLoading && phase === 'running' && !isPaused && activeMode) {
       timerRef.current = setInterval(() => {
-        setPlayers((prevPlayers) =>
-          prevPlayers.map((player, index) =>
-            index === currentPlayerIndex
-              ? activeMode.onTick(player, modeConfig)
-              : player
-          )
-        );
+        if (startOfRoundRemaining !== null && startOfRoundRemaining > 0) {
+          // Compute post-tick value eagerly
+          const newRemaining = startOfRoundRemaining <= 1 ? null : startOfRoundRemaining - 1;
+
+          // Sound triggers based on post-tick value — before React is involved
+          if (newRemaining === 4) {
+            setTimeout(() => playSound('THREE_SECOND_COUNTDOWN'), THREE_SECOND_COUNTDOWN_DELAY);
+          } else if (newRemaining === null) {
+            setTimeout(() => playSound('ACTION_TIMER_USED'), ACTION_TIMER_USED_DELAY);
+          }
+
+          setStartOfRoundRemaining(newRemaining);
+        } else {
+          const { players, currentPlayerIndex, selectedModeId } = latestStateRef.current;
+          const currentPlayer = players[currentPlayerIndex];
+
+          // Compute tick result eagerly — onTick is pure
+          const tickedPlayer = activeMode.onTick(currentPlayer, modeConfig);
+
+          // Sound triggers based on the computed post-tick values — before React is involved
+          if (selectedModeId === 'actionTimer') {
+            const newActionTime = tickedPlayer.actionTimeRemaining ?? 0;
+            if (newActionTime === 4) {
+              setTimeout(() => playSound('THREE_SECOND_COUNTDOWN'), THREE_SECOND_COUNTDOWN_DELAY);
+            }
+            if (newActionTime === 0 && (currentPlayer?.actionTimeRemaining ?? 0) > 0) {
+              setTimeout(() => playSound('ACTION_TIMER_USED'), ACTION_TIMER_USED_DELAY);
+            }
+          }
+
+          // Set state with pre-computed result (no double onTick call)
+          setPlayers((prevPlayers) =>
+            prevPlayers.map((player, index) =>
+              index === currentPlayerIndex ? tickedPlayer : player
+            )
+          );
+        }
       }, 1000);
     }
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [phase, isPaused, currentPlayerIndex, isLoading, activeMode, modeConfig]);
+  }, [phase, isPaused, currentPlayerIndex, isLoading, activeMode, modeConfig, startOfRoundRemaining]);
 
   // Handle spacebar press — only while timer is actively running
   const phaseRef = useRef(phase);
@@ -145,6 +186,10 @@ const Home: React.FC = () => {
     setPhase('players');
   };
 
+  const handleSkipCountdown = () => {
+    setStartOfRoundRemaining(null);
+  };
+
   const [hasStarted, setHasStarted] = useState<boolean>(false);
 
   const handleStart = () => {
@@ -154,7 +199,13 @@ const Home: React.FC = () => {
     if (hasStarted) {
       setCurrentPlayerIndex(0);
       setPhase('running');
-      setIsPaused(true);
+      if (selectedModeId === 'actionTimer') {
+        const countdown = (modeConfig as ActionTimerConfig).startOfRoundTime;
+        setStartOfRoundRemaining(countdown);
+        setIsPaused(false);
+      } else {
+        setIsPaused(true);
+      }
       saveTimerState({
         players,
         currentPlayerIndex: 0,
@@ -180,13 +231,26 @@ const Home: React.FC = () => {
     setPlayers(initializedPlayers);
     setHasStarted(true);
     setPhase('running');
-    setIsPaused(false);
     setCurrentPlayerIndex(0);
+    if (selectedModeId === 'actionTimer') {
+      const countdown = (modeConfig as ActionTimerConfig).startOfRoundTime;
+      setStartOfRoundRemaining(countdown);
+      setIsPaused(false);
+    } else {
+      setIsPaused(true);
+    }
   };
 
   const handleEndTurn = () => {
     if (phase !== 'running' || isPaused || !activeMode) return;
     if (timerRef.current) clearInterval(timerRef.current);
+    stopSound('THREE_SECOND_COUNTDOWN');
+
+    if (selectedModeId === 'actionTimer' && (players[currentPlayerIndex].actionTimeRemaining ?? 0) > 0) {
+      playSound('END_TURN_TIME_ADDED');
+    } else {
+      playSound('END_TURN');
+    }
 
     const updatedPlayers = players.map((player, index) =>
       index === currentPlayerIndex
@@ -211,6 +275,8 @@ const Home: React.FC = () => {
   const handlePrevTurn = () => {
     if (phase !== 'running' || isPaused || !activeMode || players.length === 0) return;
     if (timerRef.current) clearInterval(timerRef.current);
+    stopSound('THREE_SECOND_COUNTDOWN');
+    playSound('PREV_TURN');
 
     const previousIndex = currentPlayerIndex - 1 >= 0 ? currentPlayerIndex - 1 : players.length - 1;
     const updatedPlayers =
@@ -239,6 +305,8 @@ const Home: React.FC = () => {
   };
 
   const handlePause = () => {
+    stopSound('THREE_SECOND_COUNTDOWN');
+    playSound('PAUSE');
     setIsPaused(true);
     if (timerRef.current) clearInterval(timerRef.current);
     saveTimerState({
@@ -256,6 +324,7 @@ const Home: React.FC = () => {
   };
 
   const handleBackToPlayers = () => {
+    stopSound('THREE_SECOND_COUNTDOWN');
     setPhase('players');
     setIsPaused(false);
   };
@@ -360,6 +429,20 @@ const Home: React.FC = () => {
               onClick={handleResume}
             >
               <Play className="h-20 w-20 text-white/80 drop-shadow-lg" fill="currentColor" strokeWidth={0} />
+            </div>
+          </DialogPortal>
+        </Dialog>
+        <Dialog open={startOfRoundRemaining !== null && startOfRoundRemaining > 0} onOpenChange={() => {}}>
+          <DialogPortal>
+            <DialogOverlay className="bg-black/40" />
+            <div className="fixed inset-0 z-50 flex flex-col items-center justify-center">
+              <span className="text-8xl md:text-9xl font-bold text-white tabular-nums drop-shadow-lg tabular-nums">
+                {startOfRoundRemaining !== null ? formatTimeShort(startOfRoundRemaining) : ''}
+              </span>
+              <Button variant="ghost" onClick={handleSkipCountdown} className="mt-8 text-white/80">
+                Skip
+                <SkipForward className="ml-2 h-5 w-5" />
+              </Button>
             </div>
           </DialogPortal>
         </Dialog>
