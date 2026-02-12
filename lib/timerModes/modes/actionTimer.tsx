@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import { motion } from 'framer-motion';
 import { TimerMode } from '../types';
 import { registerTimerMode } from '../registry';
 import { formatTime, formatTimeShort } from '@/lib/formatTime';
@@ -102,14 +103,28 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
     const reserve = p.reserveTime ?? config.startingReserveTime;
     const inReserve = p.isInReserve ?? false;
 
+    const prevReserveRef = useRef(reserve);
+    const animationKeyRef = useRef(0);
+
+    if (reserve > prevReserveRef.current) {
+      animationKeyRef.current += 1;
+    }
+    prevReserveRef.current = reserve;
+
     return (
       <div className={isCurrent && inReserve ? 'text-red-400' : ''}>
         <p className="text-xl md:text-4xl font-semibold">{p.name}</p>
         <div className="flex justify-between text-xl md:text-4xl tabular-nums">
           <span>{formatTimeShort(actionTime)}</span>
-          <span className="text-muted-foreground text-lg md:text-2xl tabular-nums">
+          <motion.span
+            key={animationKeyRef.current}
+            initial={animationKeyRef.current > 0 ? { scale: 1.3, color: '#4ade80' } : false}
+            animate={{ scale: 1, color: '#a3a3a3' }}
+            transition={{ duration: 1, ease: 'backIn' }}
+            className="text-lg md:text-2xl tabular-nums"
+          >
             +{formatTime(reserve)}
-          </span>
+          </motion.span>
         </div>
       </div>
     );
