@@ -173,7 +173,7 @@ const PlayerInputForm: React.FC<PlayerInputFormProps> = ({
           </Button>
         )}
         <Button type="submit" className="w-full">
-          Start
+          Start Round
         </Button>
       </form>
     </>
