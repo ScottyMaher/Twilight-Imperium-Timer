@@ -8,3 +8,11 @@ export function formatTime(seconds: number): string {
   const secs = (seconds % 60).toString().padStart(2, '0');
   return `${hrs}:${mins}:${secs}`;
 }
+
+export function formatTimeShort(seconds: number): string {
+  const mins = Math.floor(seconds / 60)
+    .toString()
+    .padStart(2, '0');
+  const secs = (seconds % 60).toString().padStart(2, '0');
+  return `${mins}:${secs}`;
+}

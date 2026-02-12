@@ -1,7 +1,7 @@
 import React from 'react';
 import { TimerMode } from '../types';
 import { registerTimerMode } from '../registry';
-import { formatTime } from '@/lib/formatTime';
+import { formatTime, formatTimeShort } from '@/lib/formatTime';
 import { Player } from '@/types/index';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
@@ -29,7 +29,7 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
   ConfigComponent: ({ config, onConfigChange }) => (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Label>Action Time Per Turn: {formatTime(config.actionTimePerTurn)}</Label>
+        <Label>Action Time Per Turn: {formatTimeShort(config.actionTimePerTurn)}</Label>
         <Slider
           min={15}
           max={300}
@@ -94,7 +94,7 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
       <div className={isCurrent && inReserve ? 'text-red-400' : ''}>
         <p className="text-xl md:text-4xl font-semibold">{p.name}</p>
         <div className="flex justify-between text-xl md:text-4xl tabular-nums">
-          <span>{formatTime(actionTime)}</span>
+          <span>{formatTimeShort(actionTime)}</span>
           <span className="text-muted-foreground text-lg md:text-2xl">
             +{formatTime(reserve)}
           </span>
