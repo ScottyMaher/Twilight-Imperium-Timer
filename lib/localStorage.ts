@@ -29,13 +29,19 @@ export const savePlayers = (players: Player[]) => {
   localStorage.setItem(PLAYERS_KEY, JSON.stringify(players));
 };
 
+export const clearPlayers = () => {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(PLAYERS_KEY);
+  loadPlayers(); // Re-initialize with default players
+};
+
 interface TimerState {
   players: Player[];
   currentPlayerIndex: number;
-  isRunning: boolean;
   isPaused: boolean;
   modeId: string;
   modeConfig: unknown;
+  gameHasStarted: boolean;
 }
 
 export const loadTimerState = (): TimerState | null => {
@@ -49,11 +55,13 @@ export const loadTimerState = (): TimerState | null => {
         parsed &&
         Array.isArray(parsed.players) &&
         typeof parsed.currentPlayerIndex === 'number' &&
-        typeof parsed.isRunning === 'boolean' &&
         typeof parsed.isPaused === 'boolean' &&
         typeof parsed.modeId === 'string'
       ) {
-        return parsed as TimerState;
+        return {
+          ...parsed,
+          gameHasStarted: parsed.gameHasStarted ?? true,
+        } as TimerState;
       }
       // Schema mismatch — discard
       localStorage.removeItem(TIMER_STATE_KEY);

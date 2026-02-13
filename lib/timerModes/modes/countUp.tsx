@@ -1,7 +1,7 @@
 import React from 'react';
 import { TimerMode } from '../types';
 import { registerTimerMode } from '../registry';
-import { formatTime } from '@/lib/formatTime';
+import { FormattedTime } from '@/components/formatted-time';
 import { Player } from '@/types/index';
 
 type CountUpConfig = Record<string, never>;
@@ -27,7 +27,9 @@ const countUpMode: TimerMode<CountUpConfig> = {
   PlayerCardContent: ({ player }: { player: Player }) => (
     <>
       <p className="text-xl md:text-4xl font-semibold">{player.name}</p>
-      <p className="text-xl md:text-4xl tabular-nums">{formatTime(player.time)}</p>
+      <p className="text-xl md:text-4xl tabular-nums">
+        <FormattedTime seconds={player.time} />
+      </p>
     </>
   ),
 };
