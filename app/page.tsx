@@ -72,7 +72,7 @@ const Home: React.FC = () => {
         setModeConfig(storedState.modeConfig);
         setPhase('running');
         setIsPaused(storedState.isPaused);
-        setHasStarted(true);
+        setGameHasStarted(storedState.gameHasStarted);
       }
     }
 
@@ -101,6 +101,7 @@ const Home: React.FC = () => {
           isPaused,
           modeId: selectedModeId,
           modeConfig,
+          gameHasStarted: true,
         });
       }, 60000);
       return () => clearInterval(saveInterval);
@@ -189,13 +190,13 @@ const Home: React.FC = () => {
     setStartOfRoundRemaining(null);
   };
 
-  const [hasStarted, setHasStarted] = useState<boolean>(false);
+  const [gameHasStarted, setGameHasStarted] = useState<boolean>(false);
 
   const handleStart = () => {
     if (!activeMode) return;
 
     // If already started (coming back from running), just resume
-    if (hasStarted) {
+    if (gameHasStarted) {
       setCurrentPlayerIndex(0);
       setPhase('running');
       if (selectedModeId === 'actionTimer') {
@@ -211,6 +212,7 @@ const Home: React.FC = () => {
         isPaused: true,
         modeId: selectedModeId,
         modeConfig,
+        gameHasStarted: true,
       });
       return;
     }
@@ -227,7 +229,7 @@ const Home: React.FC = () => {
       activeMode.initializePlayer({ ...p, time: 0 }, modeConfig)
     );
     setPlayers(initializedPlayers);
-    setHasStarted(true);
+    setGameHasStarted(true);
     setPhase('running');
     setCurrentPlayerIndex(0);
     if (selectedModeId === 'actionTimer') {
@@ -265,6 +267,7 @@ const Home: React.FC = () => {
       isPaused: false,
       modeId: selectedModeId,
       modeConfig,
+      gameHasStarted: true,
     });
   };
   handleEndTurnRef.current = handleEndTurn;
@@ -296,6 +299,7 @@ const Home: React.FC = () => {
       isPaused: false,
       modeId: selectedModeId,
       modeConfig,
+      gameHasStarted: true,
     });
   };
 
@@ -310,6 +314,7 @@ const Home: React.FC = () => {
       isPaused: true,
       modeId: selectedModeId,
       modeConfig,
+      gameHasStarted: true,
     });
   };
 
@@ -325,7 +330,7 @@ const Home: React.FC = () => {
 
   const handleBackToConfigure = () => {
     setPhase('configure');
-    setHasStarted(false);
+    setGameHasStarted(false);
     clearTimerState();
   };
 
@@ -394,6 +399,7 @@ const Home: React.FC = () => {
             setPlayers={setPlayers}
             onStart={handleStart}
             onBack={handleBackToConfigure}
+            gameHasStarted={gameHasStarted}
           />
         )}
         {phase === 'running' && activeMode && (

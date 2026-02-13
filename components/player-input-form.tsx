@@ -6,15 +6,17 @@ import { Button } from '@/components/ui/button';
 import { v4 as uuidv4 } from 'uuid';
 import { Reorder, useDragControls } from 'framer-motion';
 import { ArrowLeft, GripVertical } from 'lucide-react';
+import { formatTime } from '@/lib/formatTime';
 
 interface PlayerInputFormProps {
   players: Player[];
   setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
   onStart: () => void;
   onBack?: () => void;
+  gameHasStarted: boolean;
 }
 
-interface PlayerRowProps {
+interface EditPlayerRowProps {
   player: Player;
   playersCount: number;
   onNameChange: (id: string, name: string) => void;
@@ -23,7 +25,7 @@ interface PlayerRowProps {
   dragConstraintsRef: React.RefObject<HTMLDivElement>;
 }
 
-const PlayerRow: React.FC<PlayerRowProps> = ({
+const EditPlayerRow: React.FC<EditPlayerRowProps> = ({
   player,
   playersCount,
   onNameChange,
@@ -81,11 +83,56 @@ const PlayerRow: React.FC<PlayerRowProps> = ({
   );
 };
 
+interface OrderPlayerRowProps {
+  player: Player;
+  onDragStateChange: (isDragging: boolean) => void;
+  dragConstraintsRef: React.RefObject<HTMLDivElement>;
+}
+
+const OrderPlayerRow: React.FC<OrderPlayerRowProps> = ({
+  player,
+  onDragStateChange,
+  dragConstraintsRef,
+}) => {
+  const dragControls = useDragControls();
+
+  return (
+    <Reorder.Item
+      key={player.id}
+      value={player}
+      dragListener={false}
+      dragControls={dragControls}
+      dragConstraints={dragConstraintsRef}
+      onDragStart={() => onDragStateChange(true)}
+      onDragEnd={() => onDragStateChange(false)}
+      className="flex items-center space-x-2"
+    >
+      <button
+        type="button"
+        aria-label={`Drag ${player.name || 'player'} row`}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          dragControls.start(e);
+        }}
+        onPointerUp={() => onDragStateChange(false)}
+        className="rounded touch-none select-none text-neutral-100/70 cursor-grab active:cursor-grabbing hover:text-white"
+      >
+        <GripVertical className="h-5 w-5" />
+      </button>
+      <span className="flex-1 text-white text-lg px-3">{player.name}</span>
+      {player.reserveTime != null && (
+        <span className="text-neutral-100/70 text-sm tabular-nums">{formatTime(player.reserveTime)}</span>
+      )}
+    </Reorder.Item>
+  );
+};
+
 const PlayerInputForm: React.FC<PlayerInputFormProps> = ({
   players,
   setPlayers,
   onStart,
   onBack,
+  gameHasStarted,
 }) => {
   const [isReordering, setIsReordering] = React.useState<boolean>(false);
   const previousCursorRef = React.useRef<string>('');
@@ -137,11 +184,12 @@ const PlayerInputForm: React.FC<PlayerInputFormProps> = ({
           Back
         </Button>
       )}
+
       <form
         className="w-full max-w-md space-y-4 bg-neutral-500/10 p-6 rounded shadow"
         onSubmit={(e) => {
           e.preventDefault();
-          const filledPlayers = players.filter(
+                    const filledPlayers = players.filter(
             (player) => player.name.trim() !== ''
           );
           if (filledPlayers.length === 0) {
@@ -151,23 +199,36 @@ const PlayerInputForm: React.FC<PlayerInputFormProps> = ({
           onStart();
         }}
       >
-        <h1 className="text-2xl font-bold text-center">Enter Player Names</h1>
+        <h1 className="text-2xl font-bold text-center">
+          {gameHasStarted ? 'Initiative Order' : 'Enter Player Names'}
+        </h1>
         <div ref={reorderContainerRef}>
           <Reorder.Group axis="y" values={players} onReorder={setPlayers} className="space-y-4">
-            {players.map((player) => (
-              <PlayerRow
-                key={player.id}
-                player={player}
-                playersCount={players.length}
-                onNameChange={handleNameChange}
-                onRemove={handleRemovePlayer}
-                onDragStateChange={setIsReordering}
-                dragConstraintsRef={reorderContainerRef}
-              />
-            ))}
+            {gameHasStarted ? (
+              players.map((player) => (
+                <OrderPlayerRow
+                  key={player.id}
+                  player={player}
+                  onDragStateChange={setIsReordering}
+                  dragConstraintsRef={reorderContainerRef}
+                />
+              ))
+            ) : (
+              players.map((player) => (
+                <EditPlayerRow
+                  key={player.id}
+                  player={player}
+                  playersCount={players.length}
+                  onNameChange={handleNameChange}
+                  onRemove={handleRemovePlayer}
+                  onDragStateChange={setIsReordering}
+                  dragConstraintsRef={reorderContainerRef}
+                />
+              ))
+            )}
           </Reorder.Group>
         </div>
-        {players.length < 6 && (
+        {!gameHasStarted && players.length < 6 && (
           <Button type="button" onClick={handleAddPlayer}>
             Add Player
           </Button>

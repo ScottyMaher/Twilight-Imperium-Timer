@@ -35,6 +35,7 @@ interface TimerState {
   isPaused: boolean;
   modeId: string;
   modeConfig: unknown;
+  gameHasStarted: boolean;
 }
 
 export const loadTimerState = (): TimerState | null => {
@@ -51,7 +52,10 @@ export const loadTimerState = (): TimerState | null => {
         typeof parsed.isPaused === 'boolean' &&
         typeof parsed.modeId === 'string'
       ) {
-        return parsed as TimerState;
+        return {
+          ...parsed,
+          gameHasStarted: parsed.gameHasStarted ?? true,
+        } as TimerState;
       }
       // Schema mismatch — discard
       localStorage.removeItem(TIMER_STATE_KEY);
