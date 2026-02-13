@@ -32,7 +32,6 @@ export const savePlayers = (players: Player[]) => {
 interface TimerState {
   players: Player[];
   currentPlayerIndex: number;
-  isRunning: boolean;
   isPaused: boolean;
   modeId: string;
   modeConfig: unknown;
@@ -49,7 +48,6 @@ export const loadTimerState = (): TimerState | null => {
         parsed &&
         Array.isArray(parsed.players) &&
         typeof parsed.currentPlayerIndex === 'number' &&
-        typeof parsed.isRunning === 'boolean' &&
         typeof parsed.isPaused === 'boolean' &&
         typeof parsed.modeId === 'string'
       ) {

@@ -4,5 +4,4 @@ export default interface Player {
   time: number; // Time in seconds
   actionTimeRemaining?: number; // Specific to Action Timer mode
   reserveTime?: number; // Specific to Action Timer mode
-  isInReserve?: boolean; // Specific to Action Timer mode
 }

@@ -63,7 +63,7 @@ const Home: React.FC = () => {
   useEffect(() => {
     const storedState = loadTimerState();
 
-    if (storedState && storedState.isRunning) {
+    if (storedState) {
       const mode = getTimerMode(storedState.modeId);
       if (mode) {
         setPlayers(storedState.players);
@@ -98,7 +98,6 @@ const Home: React.FC = () => {
         saveTimerState({
           players,
           currentPlayerIndex,
-          isRunning: true,
           isPaused,
           modeId: selectedModeId,
           modeConfig,
@@ -209,7 +208,6 @@ const Home: React.FC = () => {
       saveTimerState({
         players,
         currentPlayerIndex: 0,
-        isRunning: true,
         isPaused: true,
         modeId: selectedModeId,
         modeConfig,
@@ -264,7 +262,6 @@ const Home: React.FC = () => {
     saveTimerState({
       players: updatedPlayers,
       currentPlayerIndex: nextIndex,
-      isRunning: true,
       isPaused: false,
       modeId: selectedModeId,
       modeConfig,
@@ -286,7 +283,6 @@ const Home: React.FC = () => {
               ? {
                   ...player,
                   actionTimeRemaining: 0,
-                  isInReserve: true,
                 }
               : player
           )
@@ -297,7 +293,6 @@ const Home: React.FC = () => {
     saveTimerState({
       players: updatedPlayers,
       currentPlayerIndex: previousIndex,
-      isRunning: true,
       isPaused: false,
       modeId: selectedModeId,
       modeConfig,
@@ -312,7 +307,6 @@ const Home: React.FC = () => {
     saveTimerState({
       players,
       currentPlayerIndex,
-      isRunning: true,
       isPaused: true,
       modeId: selectedModeId,
       modeConfig,

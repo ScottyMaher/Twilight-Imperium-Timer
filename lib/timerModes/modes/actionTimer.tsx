@@ -16,7 +16,6 @@ export interface ActionTimerConfig {
 interface ActionTimerPlayer extends Player {
   actionTimeRemaining: number;
   reserveTime: number;
-  isInReserve: boolean;
 }
 
 const actionTimerMode: TimerMode<ActionTimerConfig> = {
@@ -68,7 +67,6 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
     ...base,
     actionTimeRemaining: config.actionTimePerTurn,
     reserveTime: config.startingReserveTime,
-    isInReserve: false,
   }),
 
   onTick: (player: Player): Player => {
@@ -78,10 +76,10 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
     }
     // Action time depleted — use reserve
     if (p.reserveTime > 0) {
-      return { ...p, isInReserve: true, reserveTime: p.reserveTime - 1, time: p.time + 1 };
+      return { ...p, reserveTime: p.reserveTime - 1, time: p.time + 1 };
     }
     // Both depleted — just track total time, don't go negative
-    return { ...p, isInReserve: true, time: p.time + 1 };
+    return { ...p, time: p.time + 1 };
   },
 
   onEndTurn: (player: Player, config: ActionTimerConfig): Player => {
@@ -92,16 +90,14 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
       ...p,
       reserveTime: p.reserveTime + leftover,
       actionTimeRemaining: config.actionTimePerTurn,
-      isInReserve: false,
       time: p.time + 1,
     };
   },
 
-  PlayerCardContent: ({ player, isCurrent, config }: { player: Player; isCurrent: boolean; config: ActionTimerConfig }) => {
+  PlayerCardContent: ({ player, config }: { player: Player; config: ActionTimerConfig }) => {
     const p = player as ActionTimerPlayer;
     const actionTime = p.actionTimeRemaining ?? config.actionTimePerTurn;
     const reserve = p.reserveTime ?? config.startingReserveTime;
-    const inReserve = p.isInReserve ?? false;
 
     const prevReserveRef = useRef(reserve);
     const animationKeyRef = useRef(0);
@@ -112,7 +108,7 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
     prevReserveRef.current = reserve;
 
     return (
-      <div className={isCurrent && inReserve ? 'text-red-400' : ''}>
+      <>
         <p className="text-xl md:text-4xl font-semibold">{p.name}</p>
         <div className="flex justify-between text-xl md:text-4xl tabular-nums">
           <span>{formatTimeShort(actionTime)}</span>
@@ -126,7 +122,7 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
             +{formatTime(reserve)}
           </motion.span>
         </div>
-      </div>
+      </>
     );
   },
 };
