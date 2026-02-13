@@ -231,7 +231,7 @@ const PlayerInputForm: React.FC<PlayerInputFormProps> = ({
       )}
 
       <form
-        className="w-full max-w-md flex flex-col gap-8 bg-neutral-500/10 mt-12 md:mt-0 pl-2 pr-4 py-4 rounded shadow"
+        className="w-full max-w-md flex flex-col gap-8 bg-neutral-500/10 my-16 my:mt-0 pl-2 pr-4 py-4 rounded shadow"
         onSubmit={(e) => {
           e.preventDefault();
           const filledPlayers = players.filter(
@@ -244,7 +244,7 @@ const PlayerInputForm: React.FC<PlayerInputFormProps> = ({
           onStart();
         }}
       >
-        <h1 className="text-2xl font-bold text-center">
+        <h1 className="text-2xl font-bold text-center pl-2">
           {gameHasStarted ? 'Initiative Order' : 'Enter Player Names'}
         </h1>
         <div ref={reorderContainerRef}>
@@ -281,14 +281,16 @@ const PlayerInputForm: React.FC<PlayerInputFormProps> = ({
             )}
           </Reorder.Group>
         </div>
-        {!gameHasStarted && players.length < 6 && (
-          <Button type="button" className="w-fit" onClick={handleAddPlayer}>
-            Add Player
+        <div className="pl-2">
+          {!gameHasStarted && players.length < 6 && (
+            <Button type="button" className="w-fit" onClick={handleAddPlayer}>
+              Add Player
+            </Button>
+          )}
+          <Button type="submit" className="w-full">
+            Start Round
           </Button>
-        )}
-        <Button type="submit" className="w-full">
-          Start Round
-        </Button>
+        </div>
       </form>
     </>
   );

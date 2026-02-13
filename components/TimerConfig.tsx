@@ -28,9 +28,9 @@ const TimerConfig: React.FC<TimerConfigProps> = ({
   const selectedMode = modes.find((m) => m.id === selectedModeId) as TimerMode | undefined;
 
   return (
-    <div className="w-full max-w-md space-y-6 bg-neutral-500/10 p-7 rounded shadow">
+    <div className="w-full max-w-md space-y-6 bg-neutral-500/10 pt-4 pb-7 px-7 mt-32 md:mt-0 rounded shadow">
       <Tabs value={selectedModeId} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="w-full h-auto bg-foreground/5 p-1">
+        <TabsList className="w-full h-auto bg-foreground/5">
           {modes.map((mode) => (
             <TabsTrigger
               key={mode.id}

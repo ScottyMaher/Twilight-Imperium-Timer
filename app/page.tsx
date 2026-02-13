@@ -377,69 +377,69 @@ const Home: React.FC = () => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5 }}
-          className="relative flex flex-col items-center justify-center md:justify-center min-h-screen min-h-dvh p-4 bg-transparent"
+          className="relative flex min-h-screen min-h-dvh flex-col items-center justify-start md:justify-center overflow-y-auto overflow-x-hidden p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-transparent"
           onClick={handleScreenTap}
         >
-        {phase === 'configure' && (
-          <div className="pointer-events-none absolute top-0 flex flex-col items-center text-center">
-            {TWILIGHT_IMPERIUM_LOGO_URL && !logoLoadFailed ? (
-              <>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={TWILIGHT_IMPERIUM_LOGO_URL}
-                  alt="Twilight Imperium"
-                  className="h-auto w-[min(92vw,42rem)]"
-                  onError={() => setLogoLoadFailed(true)}
+          {phase === 'configure' && (
+            <div className="pointer-events-none absolute top-0 flex flex-col items-center text-center">
+              {TWILIGHT_IMPERIUM_LOGO_URL && !logoLoadFailed ? (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={TWILIGHT_IMPERIUM_LOGO_URL}
+                    alt="Twilight Imperium"
+                    className="h-auto w-[min(92vw,42rem)]"
+                    onError={() => setLogoLoadFailed(true)}
+                  />
+                  <span className="relative -top-12 text-3xl font-bold uppercase tracking-[0.2em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] md:text-4xl">
+                    Timer
+                  </span>
+                </>
+              ) : (
+                <h1 className="mt-20 text-4xl font-bold tracking-wide text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] md:text-5xl">
+                  Twilight Imperium Timer
+                </h1>
+              )}
+            </div>
+          )}
+          {phase === 'configure' && (
+            <TimerConfig
+              selectedModeId={selectedModeId}
+              modeConfig={modeConfig}
+              onModeChange={handleModeChange}
+              onNext={handleConfigNext}
+            />
+          )}
+          {phase === 'players' && (
+            <PlayerInputForm
+              players={players}
+              setPlayers={setPlayers}
+              onStart={handleStart}
+              onBack={handleBackToConfigure}
+              gameHasStarted={gameHasStarted}
+              selectedModeId={selectedModeId}
+              modeConfig={modeConfig}
+            />
+          )}
+          {phase === 'running' && activeMode && (
+            <div className="w-full max-w-md flex flex-col mt-16 md:mt-0">
+              <div className="order-1 md:order-2">
+                <PlayerCards
+                  players={players}
+                  currentPlayerIndex={currentPlayerIndex}
+                  mode={activeMode}
+                  modeConfig={modeConfig}
                 />
-                <span className="relative -top-12 text-3xl font-bold uppercase tracking-[0.2em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] md:text-4xl">
-                  Timer
-                </span>
-              </>
-            ) : (
-              <h1 className="mt-20 text-4xl font-bold tracking-wide text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] md:text-5xl">
-                Twilight Imperium Timer
-              </h1>
-            )}
-          </div>
-        )}
-        {phase === 'configure' && (
-          <TimerConfig
-            selectedModeId={selectedModeId}
-            modeConfig={modeConfig}
-            onModeChange={handleModeChange}
-            onNext={handleConfigNext}
-          />
-        )}
-        {phase === 'players' && (
-          <PlayerInputForm
-            players={players}
-            setPlayers={setPlayers}
-            onStart={handleStart}
-            onBack={handleBackToConfigure}
-            gameHasStarted={gameHasStarted}
-            selectedModeId={selectedModeId}
-            modeConfig={modeConfig}
-          />
-        )}
-        {phase === 'running' && activeMode && (
-          <div className="w-full max-w-md flex flex-col">
-            <div className="order-1 md:order-2">
-              <PlayerCards
-                players={players}
-                currentPlayerIndex={currentPlayerIndex}
-                mode={activeMode}
-                modeConfig={modeConfig}
-              />
+              </div>
+              <div className="order-2 md:order-1">
+                <Controls
+                  onPrevTurn={handlePrevTurn}
+                  onEndTurn={handleEndTurn}
+                  onBack={handleBackToPlayers}
+                />
+              </div>
             </div>
-            <div className="order-2 md:order-1">
-              <Controls
-                onPrevTurn={handlePrevTurn}
-                onEndTurn={handleEndTurn}
-                onBack={handleBackToPlayers}
-              />
-            </div>
-          </div>
-        )}
+          )}
           <Dialog
             open={isPaused && phase === 'running'}
             onOpenChange={(open) => {
