@@ -7,7 +7,7 @@ import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { v4 as uuidv4 } from 'uuid';
 import { Reorder, useDragControls } from 'framer-motion';
-import { ArrowLeft, GripVertical } from 'lucide-react';
+import { GripVertical } from 'lucide-react';
 import { FormattedTime } from '@/components/formatted-time';
 import { ActionTimerConfig } from '@/lib/timerModes/modes/actionTimer';
 
@@ -15,7 +15,6 @@ interface PlayerInputFormProps {
   players: Player[];
   setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
   onStart: () => void;
-  onBack?: () => void;
   gameHasStarted: boolean;
   selectedModeId: string;
   modeConfig: unknown;
@@ -163,7 +162,6 @@ const PlayerInputForm: React.FC<PlayerInputFormProps> = ({
   players,
   setPlayers,
   onStart,
-  onBack,
   gameHasStarted,
   selectedModeId,
   modeConfig,
@@ -223,13 +221,6 @@ const PlayerInputForm: React.FC<PlayerInputFormProps> = ({
 
   return (
     <>
-      {onBack && (
-        <Button type="button" variant="ghost" onClick={onBack} className="absolute top-6 left-6">
-          <ArrowLeft />
-          Back
-        </Button>
-      )}
-
       <form
         className="w-full max-w-md flex flex-col gap-8 bg-neutral-500/10 my-16 my:mt-0 pl-2 pr-4 py-4 rounded shadow"
         onSubmit={(e) => {

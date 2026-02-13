@@ -18,15 +18,21 @@ import {
   saveModeConfig,
 } from '@/lib/localStorage';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useReducedMotion } from 'framer-motion';
 import StarField from '@/components/StarField';
 import { Dialog, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
-import { Play, SkipForward } from 'lucide-react';
+import { ArrowLeft, Play, SkipForward } from 'lucide-react';
 import { FormattedTime } from '@/components/formatted-time';
 import { ActionTimerConfig } from '@/lib/timerModes/modes/actionTimer';
 import { Button } from '@/components/ui/button';
 import { playSound, stopSound, preloadSounds } from '@/lib/sounds';
 
 type Phase = 'configure' | 'players' | 'running';
+const PHASE_ORDER: Record<Phase, number> = {
+  configure: 0,
+  players: 1,
+  running: 2,
+};
 const TWILIGHT_IMPERIUM_LOGO_URL = 'https://cdn.svc.asmodee.net/production-aconytebooks/uploads/image-converter/2020/04/TWI-Twilight-Imperium-logo.webp';
 
 // Delay offsets (ms) for fine-tuning sound sync with the tick
@@ -37,9 +43,11 @@ const Home: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>(() => loadPlayers());
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState<number>(0);
   const [phase, setPhase] = useState<Phase>('configure');
+  const [transitionDirection, setTransitionDirection] = useState<1 | -1>(1);
   const [isPaused, setIsPaused] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [logoLoadFailed, setLogoLoadFailed] = useState<boolean>(false);
+  const shouldReduceMotion = useReducedMotion();
 
   // Mode state — initialize from saved config or default to first mode
   const [selectedModeId, setSelectedModeId] = useState<string>(() => {
@@ -182,6 +190,17 @@ const Home: React.FC = () => {
     setModeConfig(config);
   };
 
+  const setPhaseWithDirection = (nextPhase: Phase) => {
+    const nextOrder = PHASE_ORDER[nextPhase];
+    const currentOrder = PHASE_ORDER[phase];
+
+    if (nextOrder !== currentOrder) {
+      setTransitionDirection(nextOrder > currentOrder ? 1 : -1);
+    }
+
+    setPhase(nextPhase);
+  };
+
   const handleConfigNext = () => {
     // if config settings HAS been changed, reset players to force re-initialization with new mode
     const storedConfig = loadModeConfig();
@@ -195,7 +214,7 @@ const Home: React.FC = () => {
       }
     }
 
-    setPhase('players');
+    setPhaseWithDirection('players');
   };
 
   const handleSkipCountdown = () => {
@@ -210,7 +229,7 @@ const Home: React.FC = () => {
     // If already started (coming back from running), just resume
     if (gameHasStarted) {
       setCurrentPlayerIndex(0);
-      setPhase('running');
+      setPhaseWithDirection('running');
       if (selectedModeId === 'actionTimer') {
         const countdown = (modeConfig as ActionTimerConfig).startOfRoundTime;
         setStartOfRoundRemaining(countdown);
@@ -248,7 +267,7 @@ const Home: React.FC = () => {
     );
     setPlayers(initializedPlayers);
     setGameHasStarted(true);
-    setPhase('running');
+    setPhaseWithDirection('running');
     setCurrentPlayerIndex(0);
     if (selectedModeId === 'actionTimer') {
       const countdown = (modeConfig as ActionTimerConfig).startOfRoundTime;
@@ -342,12 +361,12 @@ const Home: React.FC = () => {
 
   const handleBackToPlayers = () => {
     stopSound('THREE_SECOND_COUNTDOWN');
-    setPhase('players');
+    setPhaseWithDirection('players');
     setIsPaused(false);
   };
 
   const handleBackToConfigure = () => {
-    setPhase('configure');
+    setPhaseWithDirection('configure');
   };
 
   const handleScreenTap = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -380,65 +399,115 @@ const Home: React.FC = () => {
           className="relative flex min-h-screen min-h-dvh flex-col items-center justify-start md:justify-center overflow-y-auto overflow-x-hidden p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-transparent"
           onClick={handleScreenTap}
         >
-          {phase === 'configure' && (
-            <div className="pointer-events-none absolute top-0 flex flex-col items-center text-center">
-              {TWILIGHT_IMPERIUM_LOGO_URL && !logoLoadFailed ? (
+          <AnimatePresence mode="popLayout" initial={false} custom={transitionDirection}>
+            <motion.div
+              key={phase}
+              custom={transitionDirection}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              variants={{
+                enter: (direction: 1 | -1) => ({
+                  x: shouldReduceMotion ? 0 : direction > 0 ? '18%' : '-18%',
+                  opacity: shouldReduceMotion ? 0.7 : 0,
+                }),
+                center: {
+                  x: 0,
+                  opacity: 1,
+                },
+                exit: (direction: 1 | -1) => ({
+                  x: shouldReduceMotion ? 0 : direction > 0 ? '-18%' : '18%',
+                  opacity: shouldReduceMotion ? 0.7 : 0,
+                }),
+              }}
+              transition={
+                shouldReduceMotion
+                  ? { duration: 0.1, ease: 'linear' }
+                  : { duration: 0.28, ease: [0.22, 1, 0.36, 1] }
+              }
+              className="relative w-full flex flex-col min-h-[calc(100dvh-2rem)] flex flex-col items-center md:justify-center"
+            >
+              {phase === 'configure' && (
                 <>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={TWILIGHT_IMPERIUM_LOGO_URL}
-                    alt="Twilight Imperium"
-                    className="h-auto w-[min(92vw,42rem)]"
-                    onError={() => setLogoLoadFailed(true)}
+                  <div className="pointer-events-none absolute top-0 flex flex-col items-center text-center">
+                    {TWILIGHT_IMPERIUM_LOGO_URL && !logoLoadFailed ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={TWILIGHT_IMPERIUM_LOGO_URL}
+                          alt="Twilight Imperium"
+                          className="h-auto w-[min(92vw,42rem)]"
+                          onError={() => setLogoLoadFailed(true)}
+                        />
+                        <span className="relative -top-12 text-3xl font-bold uppercase tracking-[0.2em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] md:text-4xl">
+                          Timer
+                        </span>
+                      </>
+                    ) : (
+                      <h1 className="mt-20 text-4xl font-bold tracking-wide text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] md:text-5xl">
+                        Twilight Imperium Timer
+                      </h1>
+                    )}
+                  </div>
+                  <TimerConfig
+                    selectedModeId={selectedModeId}
+                    modeConfig={modeConfig}
+                    onModeChange={handleModeChange}
+                    onNext={handleConfigNext}
                   />
-                  <span className="relative -top-12 text-3xl font-bold uppercase tracking-[0.2em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] md:text-4xl">
-                    Timer
-                  </span>
                 </>
-              ) : (
-                <h1 className="mt-20 text-4xl font-bold tracking-wide text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] md:text-5xl">
-                  Twilight Imperium Timer
-                </h1>
               )}
-            </div>
-          )}
-          {phase === 'configure' && (
-            <TimerConfig
-              selectedModeId={selectedModeId}
-              modeConfig={modeConfig}
-              onModeChange={handleModeChange}
-              onNext={handleConfigNext}
-            />
-          )}
-          {phase === 'players' && (
-            <PlayerInputForm
-              players={players}
-              setPlayers={setPlayers}
-              onStart={handleStart}
-              onBack={handleBackToConfigure}
-              gameHasStarted={gameHasStarted}
-              selectedModeId={selectedModeId}
-              modeConfig={modeConfig}
-            />
-          )}
-          {phase === 'running' && activeMode && (
-            <div className="w-full max-w-md flex flex-col mt-16 md:mt-0">
-              <div className="order-1 md:order-2">
-                <PlayerCards
+              {phase === 'players' && (
+                <PlayerInputForm
                   players={players}
-                  currentPlayerIndex={currentPlayerIndex}
-                  mode={activeMode}
+                  setPlayers={setPlayers}
+                  onStart={handleStart}
+                  gameHasStarted={gameHasStarted}
+                  selectedModeId={selectedModeId}
                   modeConfig={modeConfig}
                 />
-              </div>
-              <div className="order-2 md:order-1">
-                <Controls
-                  onPrevTurn={handlePrevTurn}
-                  onEndTurn={handleEndTurn}
-                  onBack={handleBackToPlayers}
-                />
-              </div>
-            </div>
+              )}
+              {phase === 'running' && activeMode && (
+                <div className="w-full max-w-md flex flex-col mt-16 md:mt-0">
+                  <div className="order-1 md:order-2">
+                    <PlayerCards
+                      players={players}
+                      currentPlayerIndex={currentPlayerIndex}
+                      mode={activeMode}
+                      modeConfig={modeConfig}
+                    />
+                  </div>
+                  <div className="order-2 md:order-1">
+                    <Controls
+                      onPrevTurn={handlePrevTurn}
+                      onEndTurn={handleEndTurn}
+                    />
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+          {phase === 'players' && (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleBackToConfigure}
+              className="absolute top-6 left-6 z-20"
+            >
+              <ArrowLeft />
+              Back
+            </Button>
+          )}
+          {phase === 'running' && (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleBackToPlayers}
+              className="absolute top-6 left-6 z-20"
+            >
+              <ArrowLeft />
+              Back <span className="ml-3">(end round)</span>
+            </Button>
           )}
           <Dialog
             open={isPaused && phase === 'running'}
