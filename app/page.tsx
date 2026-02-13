@@ -214,6 +214,12 @@ const Home: React.FC = () => {
       if (selectedModeId === 'actionTimer') {
         const countdown = (modeConfig as ActionTimerConfig).startOfRoundTime;
         setStartOfRoundRemaining(countdown);
+        setPlayers(prevPlayers =>
+          prevPlayers.map(player => ({
+            ...player,
+            actionTimeRemaining: (modeConfig as ActionTimerConfig).actionTimePerTurn,
+          }))
+        );
         setIsPaused(false);
       } else {
         setIsPaused(true);
