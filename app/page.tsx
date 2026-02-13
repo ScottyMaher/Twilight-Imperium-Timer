@@ -400,6 +400,8 @@ const Home: React.FC = () => {
             onStart={handleStart}
             onBack={handleBackToConfigure}
             gameHasStarted={gameHasStarted}
+            selectedModeId={selectedModeId}
+            modeConfig={modeConfig}
           />
         )}
         {phase === 'running' && activeMode && (

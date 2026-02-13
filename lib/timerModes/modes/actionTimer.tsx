@@ -66,7 +66,7 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
   initializePlayer: (base: Player, config: ActionTimerConfig): Player => ({
     ...base,
     actionTimeRemaining: config.actionTimePerTurn,
-    reserveTime: config.startingReserveTime,
+    reserveTime: base.startingReserveTime ?? config.startingReserveTime,
   }),
 
   onTick: (player: Player): Player => {
