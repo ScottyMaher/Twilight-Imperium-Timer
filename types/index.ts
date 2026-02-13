@@ -1,3 +1,3 @@
-import Player from "./player";
+import Player, { PlayerColor } from "./player";
 
-export type { Player };
+export type { Player, PlayerColor };

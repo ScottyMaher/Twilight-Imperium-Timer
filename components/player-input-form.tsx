@@ -1,6 +1,6 @@
 // components/PlayerInputForm.tsx
 import React from 'react';
-import { Player } from '@/types/index';
+import { Player, PlayerColor } from '@/types/index';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -10,6 +10,8 @@ import { Reorder, useDragControls } from 'framer-motion';
 import { ArrowLeft, GripVertical } from 'lucide-react';
 import { FormattedTime } from '@/components/formatted-time';
 import { ActionTimerConfig } from '@/lib/timerModes/modes/actionTimer';
+import { PLAYER_COLORS, getPlayerColorHex } from '@/lib/playerColors';
+import { FormattedPlayerName } from '@/components/formatted-player-name';
 
 interface PlayerInputFormProps {
   players: Player[];
@@ -31,6 +33,8 @@ interface EditPlayerRowProps {
   selectedModeId: string;
   defaultReserveTime: number;
   onReserveTimeChange: (id: string, value: number | undefined) => void;
+  onColorChange: (id: string, color: PlayerColor) => void;
+  selectedColors: Set<PlayerColor>;
 }
 
 const EditPlayerRow: React.FC<EditPlayerRowProps> = ({
@@ -43,6 +47,8 @@ const EditPlayerRow: React.FC<EditPlayerRowProps> = ({
   selectedModeId,
   defaultReserveTime,
   onReserveTimeChange,
+  onColorChange,
+  selectedColors,
 }) => {
   const dragControls = useDragControls();
   const reserveValue = player.startingReserveTime ?? defaultReserveTime;
@@ -93,22 +99,49 @@ const EditPlayerRow: React.FC<EditPlayerRowProps> = ({
           </Button>
         )}
       </div>
-      {selectedModeId === 'actionTimer' && (
-        <div className="space-y-1 pl-7">
-          <Label className="text-sm text-neutral-300">
-            Starting Reserve: <FormattedTime seconds={reserveValue} />
-          </Label>
-          <Slider
-            min={60}
-            max={2700}
-            step={60}
-            value={[reserveValue]}
-            onValueChange={([v]) =>
-              onReserveTimeChange(player.id, v === defaultReserveTime ? undefined : v)
-            }
-          />
+      <div className="space-y-2 pl-7">
+        <div className="space-y-1">
+          <Label className="text-sm text-neutral-300">Player Color</Label>
+          <div className="flex flex-wrap gap-2">
+            {PLAYER_COLORS.map((entry) => {
+              const isSelected = player.color === entry.key;
+              const isTakenByOther = selectedColors.has(entry.key) && !isSelected;
+              return (
+                <button
+                  key={entry.key}
+                  type="button"
+                  aria-label={`${player.name || 'Player'} color ${entry.label}`}
+                  aria-pressed={isSelected}
+                  disabled={isTakenByOther}
+                  onClick={() => onColorChange(player.id, entry.key)}
+                  className={`h-7 w-7 rounded-full border-2 transition ${
+                    isSelected
+                      ? 'border-white ring-2 ring-white/50'
+                      : 'border-white/20 hover:border-white/60'
+                  } ${isTakenByOther ? 'cursor-not-allowed opacity-30' : 'cursor-pointer'}`}
+                  style={{ backgroundColor: getPlayerColorHex(entry.key) }}
+                />
+              );
+            })}
+          </div>
         </div>
-      )}
+        {selectedModeId === 'actionTimer' && (
+          <div className="space-y-1">
+            <Label className="text-sm text-neutral-300">
+              Starting Reserve: <FormattedTime seconds={reserveValue} />
+            </Label>
+            <Slider
+              min={60}
+              max={2700}
+              step={60}
+              value={[reserveValue]}
+              onValueChange={([v]) =>
+                onReserveTimeChange(player.id, v === defaultReserveTime ? undefined : v)
+              }
+            />
+          </div>
+        )}
+      </div>
     </Reorder.Item>
   );
 };
@@ -149,7 +182,9 @@ const OrderPlayerRow: React.FC<OrderPlayerRowProps> = ({
       >
         <GripVertical className="h-5 w-5" />
       </button>
-      <span className="flex-1 text-white text-lg px-3">{player.name}</span>
+      <span className="flex-1 text-lg px-3">
+        <FormattedPlayerName name={player.name} color={player.color} />
+      </span>
       {player.reserveTime != null && (
         <span className="text-neutral-100/70 text-sm tabular-nums">
           <FormattedTime seconds={player.reserveTime} />
@@ -174,6 +209,10 @@ const PlayerInputForm: React.FC<PlayerInputFormProps> = ({
   const [isReordering, setIsReordering] = React.useState<boolean>(false);
   const previousCursorRef = React.useRef<string>('');
   const reorderContainerRef = React.useRef<HTMLDivElement>(null);
+  const selectedColors = React.useMemo(
+    () => new Set(players.map((player) => player.color).filter(Boolean) as PlayerColor[]),
+    [players]
+  );
 
   React.useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -205,6 +244,7 @@ const PlayerInputForm: React.FC<PlayerInputFormProps> = ({
       id: uuidv4(),
       name: '',
       time: 0,
+      color: undefined,
     };
     setPlayers((prev) => [...prev, newPlayer]);
   };
@@ -217,6 +257,14 @@ const PlayerInputForm: React.FC<PlayerInputFormProps> = ({
     setPlayers((prev) =>
       prev.map((player) =>
         player.id === id ? { ...player, startingReserveTime: value } : player
+      )
+    );
+  };
+
+  const handleColorChange = (id: string, color: PlayerColor) => {
+    setPlayers((prev) =>
+      prev.map((player) =>
+        player.id === id ? { ...player, color } : player
       )
     );
   };
@@ -241,6 +289,18 @@ const PlayerInputForm: React.FC<PlayerInputFormProps> = ({
             alert('Please enter at least one player name.');
             return;
           }
+
+          if (filledPlayers.some((player) => !player.color)) {
+            alert('Please select a color for each player.');
+            return;
+          }
+
+          const filledPlayerColors = filledPlayers.map((player) => player.color as PlayerColor);
+          if (new Set(filledPlayerColors).size !== filledPlayerColors.length) {
+            alert('Each player must have a unique color.');
+            return;
+          }
+
           onStart();
         }}
       >
@@ -276,6 +336,8 @@ const PlayerInputForm: React.FC<PlayerInputFormProps> = ({
                   selectedModeId={selectedModeId}
                   defaultReserveTime={defaultReserveTime}
                   onReserveTimeChange={handleReserveTimeChange}
+                  onColorChange={handleColorChange}
+                  selectedColors={selectedColors}
                 />
               ))
             )}

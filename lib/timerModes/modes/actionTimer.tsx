@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { TimerMode } from '../types';
 import { registerTimerMode } from '../registry';
 import { FormattedTime } from '@/components/formatted-time';
+import { FormattedPlayerName } from '@/components/formatted-player-name';
 import { Player } from '@/types/index';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
@@ -115,7 +116,7 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
 
     return (
       <>
-        <p className="text-xl md:text-4xl font-semibold">{p.name}</p>
+        <p className="text-xl md:text-4xl font-semibold"><FormattedPlayerName name={p.name} color={p.color} /></p>
         <div className="flex justify-between text-xl md:text-4xl tabular-nums">
           <FormattedTime seconds={actionTime} format="short" />
           <motion.span
