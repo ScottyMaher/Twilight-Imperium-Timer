@@ -202,16 +202,17 @@ const Home: React.FC = () => {
   };
 
   const handleConfigNext = () => {
-    // if config settings HAS been changed, reset players to force re-initialization with new mode
+    // If timer mode/settings changed (or no persisted baseline exists), reset players to edit mode.
     const storedConfig = loadModeConfig();
-    if (storedConfig) {
-      const configHasChanged = JSON.stringify(storedConfig.config) !== JSON.stringify(modeConfig);
-      if (configHasChanged) {
-        saveModeConfig(selectedModeId, modeConfig);
-        setGameHasStarted(false);
-        clearPlayers();
-        clearTimerState();
-      }
+    const configHasChanged = JSON.stringify(storedConfig?.config ?? null) !== JSON.stringify(modeConfig);
+    const shouldResetForConfigChange = !storedConfig || configHasChanged;
+
+    saveModeConfig(selectedModeId, modeConfig);
+
+    if (shouldResetForConfigChange) {
+      setGameHasStarted(false);
+      clearPlayers();
+      clearTimerState();
     }
 
     setPhaseWithDirection('players');
