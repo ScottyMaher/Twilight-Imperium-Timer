@@ -10,6 +10,7 @@ import { getTimerMode, getAllTimerModes } from '@/lib/timerModes';
 import {
   loadPlayers,
   savePlayers,
+  clearPlayers,
   loadTimerState,
   saveTimerState,
   clearTimerState,
@@ -179,10 +180,21 @@ const Home: React.FC = () => {
   const handleModeChange = (modeId: string, config: unknown) => {
     setSelectedModeId(modeId);
     setModeConfig(config);
-    saveModeConfig(modeId, config);
   };
 
   const handleConfigNext = () => {
+    // if config settings HAS been changed, reset players to force re-initialization with new mode
+    const storedConfig = loadModeConfig();
+    if (storedConfig) {
+      const configHasChanged = JSON.stringify(storedConfig.config) !== JSON.stringify(modeConfig);
+      if (configHasChanged) {
+        saveModeConfig(selectedModeId, modeConfig);
+        setGameHasStarted(false);
+        clearPlayers();
+        clearTimerState();
+      }
+    }
+
     setPhase('players');
   };
 
@@ -330,8 +342,6 @@ const Home: React.FC = () => {
 
   const handleBackToConfigure = () => {
     setPhase('configure');
-    setGameHasStarted(false);
-    clearTimerState();
   };
 
   const handleScreenTap = (e: React.MouseEvent<HTMLDivElement>) => {

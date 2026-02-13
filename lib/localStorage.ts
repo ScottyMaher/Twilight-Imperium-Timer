@@ -29,6 +29,12 @@ export const savePlayers = (players: Player[]) => {
   localStorage.setItem(PLAYERS_KEY, JSON.stringify(players));
 };
 
+export const clearPlayers = () => {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(PLAYERS_KEY);
+  loadPlayers(); // Re-initialize with default players
+};
+
 interface TimerState {
   players: Player[];
   currentPlayerIndex: number;
