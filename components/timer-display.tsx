@@ -1,7 +1,7 @@
 // components/TimerDisplay.tsx
 import React from 'react';
 import { Player } from '../types';
-import { formatTime } from '@/lib/formatTime';
+import { FormattedTime } from '@/components/formatted-time';
 
 interface TimerDisplayProps {
   player: Player;
@@ -19,7 +19,9 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
       <h2 className="text-xl font-semibold">
         Player {playerIndex}: {name}
       </h2>
-      <p className="text-3xl mt-2">{formatTime(time)}</p>
+      <p className="text-3xl mt-2">
+        <FormattedTime seconds={time} />
+      </p>
     </div>
   );
 };

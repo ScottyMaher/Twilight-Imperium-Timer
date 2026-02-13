@@ -21,7 +21,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import StarField from '@/components/StarField';
 import { Dialog, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { Play, SkipForward } from 'lucide-react';
-import { formatTimeShort } from '@/lib/formatTime';
+import { FormattedTime } from '@/components/formatted-time';
 import { ActionTimerConfig } from '@/lib/timerModes/modes/actionTimer';
 import { Button } from '@/components/ui/button';
 import { playSound, stopSound, preloadSounds } from '@/lib/sounds';
@@ -362,17 +362,17 @@ const Home: React.FC = () => {
 
   return (
     <>
-    <StarField animated={phase !== 'running'} />
-    <AnimatePresence>
-      <motion.div
-        key="main-content"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.5 }}
-        className="relative flex flex-col items-center justify-center md:justify-center min-h-screen min-h-dvh p-4 bg-transparent"
-        onClick={handleScreenTap}
-      >
+      <StarField animated={phase !== 'running'} />
+      <AnimatePresence>
+        <motion.div
+          key="main-content"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5 }}
+          className="relative flex flex-col items-center justify-center md:justify-center min-h-screen min-h-dvh p-4 bg-transparent"
+          onClick={handleScreenTap}
+        >
         {phase === 'configure' && (
           <div className="pointer-events-none absolute top-0 flex flex-col items-center text-center">
             {TWILIGHT_IMPERIUM_LOGO_URL && !logoLoadFailed ? (
@@ -433,33 +433,45 @@ const Home: React.FC = () => {
             </div>
           </div>
         )}
-        <Dialog open={isPaused && phase === 'running'} onOpenChange={(open) => { if (!open) handleResume(); }}>
-          <DialogPortal>
-            <DialogOverlay className="bg-black/40" />
-            <div
-              className="fixed inset-0 z-50 flex items-center justify-center cursor-pointer"
-              onClick={handleResume}
-            >
-              <Play className="h-20 w-20 text-white/80 drop-shadow-lg" fill="currentColor" strokeWidth={0} />
-            </div>
-          </DialogPortal>
-        </Dialog>
-        <Dialog open={startOfRoundRemaining !== null && startOfRoundRemaining > 0} onOpenChange={() => {}}>
-          <DialogPortal>
-            <DialogOverlay className="bg-black/40" />
-            <div className="fixed inset-0 z-50 flex flex-col items-center justify-center">
-              <span className="text-8xl md:text-9xl font-bold text-white tabular-nums drop-shadow-lg tabular-nums">
-                {startOfRoundRemaining !== null ? formatTimeShort(startOfRoundRemaining) : ''}
-              </span>
-              <Button variant="ghost" onClick={handleSkipCountdown} className="mt-8 text-white/80">
-                Skip
-                <SkipForward className="ml-2 h-5 w-5" />
-              </Button>
-            </div>
-          </DialogPortal>
-        </Dialog>
-      </motion.div>
-    </AnimatePresence>
+          <Dialog
+            open={isPaused && phase === 'running'}
+            onOpenChange={(open) => {
+              if (!open) handleResume();
+            }}
+          >
+            <DialogPortal>
+              <DialogOverlay className="bg-black/40" />
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center cursor-pointer"
+                onClick={handleResume}
+              >
+                <Play className="h-20 w-20 text-white/80 drop-shadow-lg" fill="currentColor" strokeWidth={0} />
+              </div>
+            </DialogPortal>
+          </Dialog>
+          <Dialog
+            open={startOfRoundRemaining !== null && startOfRoundRemaining > 0}
+            onOpenChange={() => {}}
+          >
+            <DialogPortal>
+              <DialogOverlay className="bg-black/40" />
+              <div className="fixed inset-0 z-50 flex flex-col items-center justify-center">
+                <span className="text-8xl md:text-9xl font-bold text-white tabular-nums drop-shadow-lg tabular-nums">
+                  {startOfRoundRemaining !== null ? (
+                    <FormattedTime seconds={startOfRoundRemaining} format="short" />
+                  ) : (
+                    ''
+                  )}
+                </span>
+                <Button variant="ghost" onClick={handleSkipCountdown} className="mt-8 text-white/80">
+                  Skip
+                  <SkipForward className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+            </DialogPortal>
+          </Dialog>
+        </motion.div>
+      </AnimatePresence>
     </>
   );
 };

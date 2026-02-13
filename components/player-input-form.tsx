@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { v4 as uuidv4 } from 'uuid';
 import { Reorder, useDragControls } from 'framer-motion';
 import { ArrowLeft, GripVertical } from 'lucide-react';
-import { formatTime } from '@/lib/formatTime';
+import { FormattedTime } from '@/components/formatted-time';
 import { ActionTimerConfig } from '@/lib/timerModes/modes/actionTimer';
 
 interface PlayerInputFormProps {
@@ -95,7 +95,9 @@ const EditPlayerRow: React.FC<EditPlayerRowProps> = ({
       </div>
       {selectedModeId === 'actionTimer' && (
         <div className="space-y-1 pl-7">
-          <Label className="text-sm text-neutral-300">Starting Reserve: {formatTime(reserveValue)}</Label>
+          <Label className="text-sm text-neutral-300">
+            Starting Reserve: <FormattedTime seconds={reserveValue} />
+          </Label>
           <Slider
             min={60}
             max={2700}
@@ -149,7 +151,9 @@ const OrderPlayerRow: React.FC<OrderPlayerRowProps> = ({
       </button>
       <span className="flex-1 text-white text-lg px-3">{player.name}</span>
       {player.reserveTime != null && (
-        <span className="text-neutral-100/70 text-sm tabular-nums">{formatTime(player.reserveTime)}</span>
+        <span className="text-neutral-100/70 text-sm tabular-nums">
+          <FormattedTime seconds={player.reserveTime} />
+        </span>
       )}
     </Reorder.Item>
   );
@@ -230,7 +234,7 @@ const PlayerInputForm: React.FC<PlayerInputFormProps> = ({
         className="w-full max-w-md flex flex-col gap-8 bg-neutral-500/10 mt-12 md:mt-0 pl-2 pr-4 py-4 rounded shadow"
         onSubmit={(e) => {
           e.preventDefault();
-                    const filledPlayers = players.filter(
+          const filledPlayers = players.filter(
             (player) => player.name.trim() !== ''
           );
           if (filledPlayers.length === 0) {
@@ -244,7 +248,12 @@ const PlayerInputForm: React.FC<PlayerInputFormProps> = ({
           {gameHasStarted ? 'Initiative Order' : 'Enter Player Names'}
         </h1>
         <div ref={reorderContainerRef}>
-          <Reorder.Group axis="y" values={players} onReorder={setPlayers} className="flex flex-col gap-8">
+          <Reorder.Group
+            axis="y"
+            values={players}
+            onReorder={setPlayers}
+            className="flex flex-col gap-8"
+          >
             {gameHasStarted ? (
               players.map((player) => (
                 <OrderPlayerRow
