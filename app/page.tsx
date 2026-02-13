@@ -10,6 +10,7 @@ import { getTimerMode, getAllTimerModes } from '@/lib/timerModes';
 import {
   loadPlayers,
   savePlayers,
+  clearPlayers,
   loadTimerState,
   saveTimerState,
   clearTimerState,
@@ -20,7 +21,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import StarField from '@/components/StarField';
 import { Dialog, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { Play, SkipForward } from 'lucide-react';
-import { formatTimeShort } from '@/lib/formatTime';
+import { FormattedTime } from '@/components/formatted-time';
 import { ActionTimerConfig } from '@/lib/timerModes/modes/actionTimer';
 import { Button } from '@/components/ui/button';
 import { playSound, stopSound, preloadSounds } from '@/lib/sounds';
@@ -63,7 +64,7 @@ const Home: React.FC = () => {
   useEffect(() => {
     const storedState = loadTimerState();
 
-    if (storedState && storedState.isRunning) {
+    if (storedState) {
       const mode = getTimerMode(storedState.modeId);
       if (mode) {
         setPlayers(storedState.players);
@@ -72,7 +73,7 @@ const Home: React.FC = () => {
         setModeConfig(storedState.modeConfig);
         setPhase('running');
         setIsPaused(storedState.isPaused);
-        setHasStarted(true);
+        setGameHasStarted(storedState.gameHasStarted);
       }
     }
 
@@ -98,10 +99,10 @@ const Home: React.FC = () => {
         saveTimerState({
           players,
           currentPlayerIndex,
-          isRunning: true,
           isPaused,
           modeId: selectedModeId,
           modeConfig,
+          gameHasStarted: true,
         });
       }, 60000);
       return () => clearInterval(saveInterval);
@@ -179,10 +180,21 @@ const Home: React.FC = () => {
   const handleModeChange = (modeId: string, config: unknown) => {
     setSelectedModeId(modeId);
     setModeConfig(config);
-    saveModeConfig(modeId, config);
   };
 
   const handleConfigNext = () => {
+    // if config settings HAS been changed, reset players to force re-initialization with new mode
+    const storedConfig = loadModeConfig();
+    if (storedConfig) {
+      const configHasChanged = JSON.stringify(storedConfig.config) !== JSON.stringify(modeConfig);
+      if (configHasChanged) {
+        saveModeConfig(selectedModeId, modeConfig);
+        setGameHasStarted(false);
+        clearPlayers();
+        clearTimerState();
+      }
+    }
+
     setPhase('players');
   };
 
@@ -190,18 +202,24 @@ const Home: React.FC = () => {
     setStartOfRoundRemaining(null);
   };
 
-  const [hasStarted, setHasStarted] = useState<boolean>(false);
+  const [gameHasStarted, setGameHasStarted] = useState<boolean>(false);
 
   const handleStart = () => {
     if (!activeMode) return;
 
     // If already started (coming back from running), just resume
-    if (hasStarted) {
+    if (gameHasStarted) {
       setCurrentPlayerIndex(0);
       setPhase('running');
       if (selectedModeId === 'actionTimer') {
         const countdown = (modeConfig as ActionTimerConfig).startOfRoundTime;
         setStartOfRoundRemaining(countdown);
+        setPlayers(prevPlayers =>
+          prevPlayers.map(player => ({
+            ...player,
+            actionTimeRemaining: (modeConfig as ActionTimerConfig).actionTimePerTurn,
+          }))
+        );
         setIsPaused(false);
       } else {
         setIsPaused(true);
@@ -209,10 +227,10 @@ const Home: React.FC = () => {
       saveTimerState({
         players,
         currentPlayerIndex: 0,
-        isRunning: true,
         isPaused: true,
         modeId: selectedModeId,
         modeConfig,
+        gameHasStarted: true,
       });
       return;
     }
@@ -229,7 +247,7 @@ const Home: React.FC = () => {
       activeMode.initializePlayer({ ...p, time: 0 }, modeConfig)
     );
     setPlayers(initializedPlayers);
-    setHasStarted(true);
+    setGameHasStarted(true);
     setPhase('running');
     setCurrentPlayerIndex(0);
     if (selectedModeId === 'actionTimer') {
@@ -264,10 +282,10 @@ const Home: React.FC = () => {
     saveTimerState({
       players: updatedPlayers,
       currentPlayerIndex: nextIndex,
-      isRunning: true,
       isPaused: false,
       modeId: selectedModeId,
       modeConfig,
+      gameHasStarted: true,
     });
   };
   handleEndTurnRef.current = handleEndTurn;
@@ -286,7 +304,6 @@ const Home: React.FC = () => {
               ? {
                   ...player,
                   actionTimeRemaining: 0,
-                  isInReserve: true,
                 }
               : player
           )
@@ -297,10 +314,10 @@ const Home: React.FC = () => {
     saveTimerState({
       players: updatedPlayers,
       currentPlayerIndex: previousIndex,
-      isRunning: true,
       isPaused: false,
       modeId: selectedModeId,
       modeConfig,
+      gameHasStarted: true,
     });
   };
 
@@ -312,10 +329,10 @@ const Home: React.FC = () => {
     saveTimerState({
       players,
       currentPlayerIndex,
-      isRunning: true,
       isPaused: true,
       modeId: selectedModeId,
       modeConfig,
+      gameHasStarted: true,
     });
   };
 
@@ -331,8 +348,6 @@ const Home: React.FC = () => {
 
   const handleBackToConfigure = () => {
     setPhase('configure');
-    setHasStarted(false);
-    clearTimerState();
   };
 
   const handleScreenTap = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -354,17 +369,17 @@ const Home: React.FC = () => {
 
   return (
     <>
-    <StarField animated={phase !== 'running'} />
-    <AnimatePresence>
-      <motion.div
-        key="main-content"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.5 }}
-        className="relative flex flex-col items-center justify-center md:justify-center min-h-screen min-h-dvh p-4 bg-transparent"
-        onClick={handleScreenTap}
-      >
+      <StarField animated={phase !== 'running'} />
+      <AnimatePresence>
+        <motion.div
+          key="main-content"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5 }}
+          className="relative flex flex-col items-center justify-center md:justify-center min-h-screen min-h-dvh p-4 bg-transparent"
+          onClick={handleScreenTap}
+        >
         {phase === 'configure' && (
           <div className="pointer-events-none absolute top-0 flex flex-col items-center text-center">
             {TWILIGHT_IMPERIUM_LOGO_URL && !logoLoadFailed ? (
@@ -401,6 +416,9 @@ const Home: React.FC = () => {
             setPlayers={setPlayers}
             onStart={handleStart}
             onBack={handleBackToConfigure}
+            gameHasStarted={gameHasStarted}
+            selectedModeId={selectedModeId}
+            modeConfig={modeConfig}
           />
         )}
         {phase === 'running' && activeMode && (
@@ -422,33 +440,45 @@ const Home: React.FC = () => {
             </div>
           </div>
         )}
-        <Dialog open={isPaused && phase === 'running'} onOpenChange={(open) => { if (!open) handleResume(); }}>
-          <DialogPortal>
-            <DialogOverlay className="bg-black/40" />
-            <div
-              className="fixed inset-0 z-50 flex items-center justify-center cursor-pointer"
-              onClick={handleResume}
-            >
-              <Play className="h-20 w-20 text-white/80 drop-shadow-lg" fill="currentColor" strokeWidth={0} />
-            </div>
-          </DialogPortal>
-        </Dialog>
-        <Dialog open={startOfRoundRemaining !== null && startOfRoundRemaining > 0} onOpenChange={() => {}}>
-          <DialogPortal>
-            <DialogOverlay className="bg-black/40" />
-            <div className="fixed inset-0 z-50 flex flex-col items-center justify-center">
-              <span className="text-8xl md:text-9xl font-bold text-white tabular-nums drop-shadow-lg tabular-nums">
-                {startOfRoundRemaining !== null ? formatTimeShort(startOfRoundRemaining) : ''}
-              </span>
-              <Button variant="ghost" onClick={handleSkipCountdown} className="mt-8 text-white/80">
-                Skip
-                <SkipForward className="ml-2 h-5 w-5" />
-              </Button>
-            </div>
-          </DialogPortal>
-        </Dialog>
-      </motion.div>
-    </AnimatePresence>
+          <Dialog
+            open={isPaused && phase === 'running'}
+            onOpenChange={(open) => {
+              if (!open) handleResume();
+            }}
+          >
+            <DialogPortal>
+              <DialogOverlay className="bg-black/40" />
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center cursor-pointer"
+                onClick={handleResume}
+              >
+                <Play className="h-20 w-20 text-white/80 drop-shadow-lg" fill="currentColor" strokeWidth={0} />
+              </div>
+            </DialogPortal>
+          </Dialog>
+          <Dialog
+            open={startOfRoundRemaining !== null && startOfRoundRemaining > 0}
+            onOpenChange={() => {}}
+          >
+            <DialogPortal>
+              <DialogOverlay className="bg-black/40" />
+              <div className="fixed inset-0 z-50 flex flex-col items-center justify-center">
+                <span className="text-8xl md:text-9xl font-bold text-white tabular-nums drop-shadow-lg tabular-nums">
+                  {startOfRoundRemaining !== null ? (
+                    <FormattedTime seconds={startOfRoundRemaining} format="short" />
+                  ) : (
+                    ''
+                  )}
+                </span>
+                <Button variant="ghost" onClick={handleSkipCountdown} className="mt-8 text-white/80">
+                  Skip
+                  <SkipForward className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+            </DialogPortal>
+          </Dialog>
+        </motion.div>
+      </AnimatePresence>
     </>
   );
 };

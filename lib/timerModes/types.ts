@@ -11,5 +11,5 @@ export interface TimerMode<TConfig = any> {
   initializePlayer: (base: Player, config: TConfig) => Player;
   onTick: (player: Player, config: TConfig) => Player;
   onEndTurn: (player: Player, config: TConfig) => Player;
-  PlayerCardContent: FC<{ player: Player; isCurrent: boolean; config: TConfig }>;
+  PlayerCardContent: FC<{ player: Player; config: TConfig }>;
 }

@@ -40,8 +40,6 @@ const PlayerCards: React.FC<PlayerCardsProps> = ({
           opacity = 0.8;
         }
 
-        const isCurrent = index === 0;
-
         return (
           <motion.div
             key={player.id}
@@ -56,7 +54,6 @@ const PlayerCards: React.FC<PlayerCardsProps> = ({
           >
             <mode.PlayerCardContent
               player={player}
-              isCurrent={isCurrent}
               config={modeConfig}
             />
           </motion.div>

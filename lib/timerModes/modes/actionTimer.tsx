@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { TimerMode } from '../types';
 import { registerTimerMode } from '../registry';
-import { formatTime, formatTimeShort } from '@/lib/formatTime';
+import { FormattedTime } from '@/components/formatted-time';
 import { Player } from '@/types/index';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
@@ -16,7 +16,6 @@ export interface ActionTimerConfig {
 interface ActionTimerPlayer extends Player {
   actionTimeRemaining: number;
   reserveTime: number;
-  isInReserve: boolean;
 }
 
 const actionTimerMode: TimerMode<ActionTimerConfig> = {
@@ -32,7 +31,9 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
   ConfigComponent: ({ config, onConfigChange }) => (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Label>Start of Round Time: {formatTimeShort(config.startOfRoundTime)}</Label>
+        <Label>
+          Start of Round Time: <FormattedTime seconds={config.startOfRoundTime} format="short" />
+        </Label>
         <Slider
           min={60}
           max={600}
@@ -42,7 +43,9 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
         />
       </div>
       <div className="space-y-2">
-        <Label>Action Time Per Turn: {formatTimeShort(config.actionTimePerTurn)}</Label>
+        <Label>
+          Action Time Per Turn: <FormattedTime seconds={config.actionTimePerTurn} format="short" />
+        </Label>
         <Slider
           min={15}
           max={180}
@@ -52,7 +55,9 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
         />
       </div>
       <div className="space-y-2">
-        <Label>Starting Reserve Time: {formatTime(config.startingReserveTime)}</Label>
+        <Label>
+          Starting Reserve Time: <FormattedTime seconds={config.startingReserveTime} />
+        </Label>
         <Slider
           min={60}
           max={2700}
@@ -67,8 +72,7 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
   initializePlayer: (base: Player, config: ActionTimerConfig): Player => ({
     ...base,
     actionTimeRemaining: config.actionTimePerTurn,
-    reserveTime: config.startingReserveTime,
-    isInReserve: false,
+    reserveTime: base.startingReserveTime ?? config.startingReserveTime,
   }),
 
   onTick: (player: Player): Player => {
@@ -78,10 +82,10 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
     }
     // Action time depleted — use reserve
     if (p.reserveTime > 0) {
-      return { ...p, isInReserve: true, reserveTime: p.reserveTime - 1, time: p.time + 1 };
+      return { ...p, reserveTime: p.reserveTime - 1, time: p.time + 1 };
     }
     // Both depleted — just track total time, don't go negative
-    return { ...p, isInReserve: true, time: p.time + 1 };
+    return { ...p, time: p.time + 1 };
   },
 
   onEndTurn: (player: Player, config: ActionTimerConfig): Player => {
@@ -92,16 +96,14 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
       ...p,
       reserveTime: p.reserveTime + leftover,
       actionTimeRemaining: config.actionTimePerTurn,
-      isInReserve: false,
       time: p.time + 1,
     };
   },
 
-  PlayerCardContent: ({ player, isCurrent, config }: { player: Player; isCurrent: boolean; config: ActionTimerConfig }) => {
+  PlayerCardContent: ({ player, config }: { player: Player; config: ActionTimerConfig }) => {
     const p = player as ActionTimerPlayer;
     const actionTime = p.actionTimeRemaining ?? config.actionTimePerTurn;
     const reserve = p.reserveTime ?? config.startingReserveTime;
-    const inReserve = p.isInReserve ?? false;
 
     const prevReserveRef = useRef(reserve);
     const animationKeyRef = useRef(0);
@@ -112,10 +114,10 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
     prevReserveRef.current = reserve;
 
     return (
-      <div className={isCurrent && inReserve ? 'text-red-400' : ''}>
+      <>
         <p className="text-xl md:text-4xl font-semibold">{p.name}</p>
         <div className="flex justify-between text-xl md:text-4xl tabular-nums">
-          <span>{formatTimeShort(actionTime)}</span>
+          <FormattedTime seconds={actionTime} format="short" />
           <motion.span
             key={animationKeyRef.current}
             initial={animationKeyRef.current > 0 ? { scale: 1.3, color: '#4ade80' } : false}
@@ -123,10 +125,10 @@ const actionTimerMode: TimerMode<ActionTimerConfig> = {
             transition={{ duration: 1, ease: 'backIn' }}
             className="text-lg md:text-2xl tabular-nums"
           >
-            +{formatTime(reserve)}
+            +<FormattedTime seconds={reserve} />
           </motion.span>
         </div>
-      </div>
+      </>
     );
   },
 };
